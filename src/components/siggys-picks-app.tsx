@@ -413,8 +413,8 @@ export function SiggysPicksApp() {
 
         <header className="flex items-center justify-between border-b p-4">
           <div className="flex items-center gap-3">
-            <HockeyPuckIcon className="w-8 h-8 text-primary md:hidden" />
-            <HockeyRinkIcon className="w-8 h-8 text-primary md:hidden" />
+            <HockeyPuckIcon className="w-8 h-8 text-primary shrink-0 md:hidden" />
+            <HockeyRinkIcon className="w-8 h-8 text-primary shrink-0 md:hidden" />
             <div className="flex flex-col">
               <h1 className="text-2xl font-bold font-headline text-foreground md:hidden">Siggys Picks</h1>
               <h2 className="text-xl md:text-2xl font-semibold font-headline text-foreground">
