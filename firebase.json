@@ -1,0 +1,31 @@
+{
+  "hosting": [
+    {
+      "site": "siggys-picks",
+      "source": ".",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "frameworksBackend": {
+        "region": "us-east1"
+      }
+     },
+    {
+      "site": "siggys-picks-staging",
+      "source": ".",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "frameworksBackend": {
+        "region": "us-east1"
+      }
+    }
+  ],
+  "emulators": {
+    "singleProjectMode": true
+  }
+}

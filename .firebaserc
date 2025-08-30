@@ -1,0 +1,18 @@
+{
+  "projects": {
+    "default": "siggys-picks"
+  },
+  "targets": {
+    "siggys-picks": {
+      "hosting": {
+        "prod": [
+          "siggys-picks"
+        ],
+        "staging": [
+          "siggys-picks-staging"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}
