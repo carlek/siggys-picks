@@ -9,7 +9,7 @@ import { getGames, type Game } from "@/lib/nhl-api"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Card, CardContent } from "@/components/ui/card"
-import { HockeyPuckIcon } from "@/components/icons"
+import { HockeyPuckIcon, HockeyRinkIcon } from "@/components/icons"
 import { useAuth } from "@/hooks/useAuth";
 import { AuthStrip } from "@/components/auth/AuthStrip";
 
@@ -402,6 +402,7 @@ export function SiggysPicksApp() {
         <div className="flex items-center gap-3 mb-6 px-2">
           <HockeyPuckIcon className="w-8 h-8 text-primary" />
           <h1 className="text-2xl font-bold font-headline text-foreground">Siggys Picks</h1>
+          <HockeyRinkIcon className="w-8 h-8 text-primary" />
         </div>
         <div className="flex-1">{calendar}</div>
         <div className="text-xs text-muted-foreground p-2">
@@ -413,6 +414,7 @@ export function SiggysPicksApp() {
         <header className="flex items-center justify-between border-b p-4">
           <div className="flex items-center gap-3">
             <HockeyPuckIcon className="w-8 h-8 text-primary md:hidden" />
+            <HockeyRinkIcon className="w-8 h-8 text-primary md:hidden" />
             <div className="flex flex-col">
               <h1 className="text-2xl font-bold font-headline text-foreground md:hidden">Siggys Picks</h1>
               <h2 className="text-xl md:text-2xl font-semibold font-headline text-foreground">
