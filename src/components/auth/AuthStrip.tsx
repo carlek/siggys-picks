@@ -8,8 +8,12 @@ export function AuthStrip() {
   if (loading) return <div className="text-sm text-muted-foreground">Loading...</div>;
 
   return user ? (
-    <div className="flex items-center gap-3">
-      <span className="text-sm">{user.displayName || user.email}</span>
+    <div className="flex items-center gap-3 w-full gap-3 px-3">
+      <span className="text-sm">
+        {user.displayName
+          ? `Hi ${user.displayName.split(" ")[0]}`
+          : `Hi ${user.email?.split("@")[0]}`}
+      </span>
       <SignOutButton />
     </div>
   ) : (

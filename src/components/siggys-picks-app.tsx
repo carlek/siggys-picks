@@ -343,15 +343,12 @@ export function SiggysPicksApp() {
   React.useEffect(() => {
     if (!selectedDate) return
 
-    // If auth is enabled, wait until authLoading is false and the user is present
-    if (firebaseConfig.enableAuth) {
-      if (authLoading) return
-      if (!user) {
-        // not signed in - do not fetch yet
-        setIsLoading(false)
-        setGames([])
-        return
-      }
+    // Wait until authLoading is over and a user is present
+    if (authLoading) return
+    if (!user) {
+      setIsLoading(false)
+      setGames([])
+      return
     }
 
     setIsLoading(true)
@@ -418,7 +415,7 @@ export function SiggysPicksApp() {
             <div className="flex flex-col">
               <h1 className="text-2xl font-bold font-headline text-foreground md:hidden">Siggys Picks</h1>
               <h2 className="text-xl md:text-2xl font-semibold font-headline text-foreground">
-                {selectedDate ? `Games for ${format(selectedDate, "EEEE, MMMM d")}` : "Select a date"}
+                {selectedDate ? `Games on ${format(selectedDate, "EEEE MMMM d")}` : "Select a date"}
               </h2>
             </div>
           </div>
@@ -437,7 +434,7 @@ export function SiggysPicksApp() {
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                    {selectedDate ? format(selectedDate, "P") : <span>Pick a date</span>}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="end">
@@ -446,12 +443,9 @@ export function SiggysPicksApp() {
               </Popover>
             </div>
 
-            {/* auth - shown above date on small screens */}
-            {firebaseConfig.enableAuth && (
-              <div className="shrink-0">
-                <AuthStrip />
-              </div>
-            )}
+            <div className="shrink-0">
+              <AuthStrip />
+            </div>
           </div>
 
         </header>
@@ -463,7 +457,6 @@ export function SiggysPicksApp() {
             </div>
           ) : !user ? (
             <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground rounded-lg border-2 border-dashed p-8">
-              {/* <CalendarIcon className="w-16 h-16 mb-4" /> */}
               <h3 className="text-lg font-semibold font-headline mb-1 text-foreground">
                 🐈‍⬛ Please sign in 🐈‍⬛ 
               </h3>
