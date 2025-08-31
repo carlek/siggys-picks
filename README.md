@@ -7,4 +7,4 @@ He summarizes games in his special style, always looking out for his beloved Pan
 
 Stay tuned for game reviews, betting odds and more wisdom and fun from Siggy the Sigster.
  
-![Demo](./siggys-picks.Webp)
+![Demo](./siggys-picks.webp)
