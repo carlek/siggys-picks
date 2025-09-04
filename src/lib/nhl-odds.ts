@@ -8,7 +8,8 @@ export interface TeamOdds {
 
 export interface GameOdds {
   provider: string | null;  
-  overUnder: number | null;     
+  overUnder: number | null; 
+  overOdds: number | null;    
   away: TeamOdds;
   home: TeamOdds;
 }
@@ -28,24 +29,21 @@ function parseEspnOdds(json: any): GameOdds | null {
   // pickcenter[0] is the first book / consensus entry
   const entry = pc[0];
 
+  const provider = entry?.provider ?? null;
   const awayMoney = entry?.awayTeamOdds?.moneyLine;
   const homeMoney = entry?.homeTeamOdds?.moneyLine;
 
-  const awaySpreadPts = entry?.pointSpread.away.open.line;
-  const homeSpreadPts = entry?.pointSpread.home.open.line;
-
+  const awaySpreadPts = entry?.pointSpread?.away.open.line;
+  const homeSpreadPts = entry?.pointSpread?.home.open.line;
   const awaySpreadOdds = entry?.awayTeamOdds?.spreadOdds;
   const homeSpreadOdds = entry?.homeTeamOdds?.spreadOdds;
+  const overUnder = toNum(entry?.overUnder);
+  const overOdds = toNum(entry?.overOdds);
   
-  const provider = entry?.provider ?? entry?.details ?? null;
-  const overUnder =
-    toNum(entry?.current?.overUnder?.displayValue ??
-          entry?.current?.overUnder ??
-          entry?.overUnder);
-
   return {
     provider: typeof provider === 'string' ? provider : null,
-    overUnder,
+    overUnder: overUnder,
+    overOdds: overOdds,
     away: {
       moneyline: toNum(awayMoney),
       pointSpread: toNum(awaySpreadPts),

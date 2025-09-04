@@ -22,11 +22,6 @@ export interface Game {
   gameTime: string;
   recapUrl?: string;
   recapTitle?: string; // optional cache 
-
-  homeMoneyline: number | null;
-  homePointSpread: number | null;
-  awayMoneyline: number | null;
-  awayPointSpread: number | null;
   odds: GameOdds | null;
 }
 
@@ -96,7 +91,7 @@ export async function getGames(date: Date): Promise<Game[]> {
           )?.href
         : undefined;
       
-      const odds = oddsMap[String(event.id)] ?? null;
+      const gameOdds = oddsMap[String(event.id)] ?? null;
 
       return {
         id: event.id,
@@ -118,13 +113,7 @@ export async function getGames(date: Date): Promise<Game[]> {
         awayScore: parseInt(awayCompetitor.score, 10),
         gameTime: formatInTimeZone(new Date(event.date), easternTimeZone, 'h:mm a'),
         recapUrl: recapLink,
-
-        homeMoneyline: odds?.home.moneyline ?? null,
-        homePointSpread: odds?.home.pointSpread ?? null,
-        awayMoneyline: odds?.away.moneyline ?? null,
-        awayPointSpread: odds?.away.pointSpread ?? null,
-        odds, // full payload
-
+        odds: gameOdds, 
       };
     });
   } catch (error: any) {

@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { extractRecapFromUrl } from "@/lib/recap-extract";
-import { summarizeWithAI, summarizeAsSiggy } from "@/ai/genkit";
+import { summarizeWithoutAI, summarizeAsSiggy } from "@/ai/genkit";
 
 export const runtime = "nodejs";
 
@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const recap = await extractRecapFromUrl(url);
-    const summary = await summarizeWithAI(recap.text, { maxSentences: 8 });
+    // const summary = await summarizeWithoutAI(recap.text, { maxSentences: 8 });
     const summarySiggy = await summarizeAsSiggy(recap.text,
       {
         maxChars: 12000,

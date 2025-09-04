@@ -30,7 +30,7 @@ function splitSentences(s: string): string[] {
 }
 
 // 4) Stub implementation (extractive)
-export async function summarizeWithAI(
+export async function summarizeWithoutAI(
   text: string,
   opts: SummarizeOptions = {}
 ): Promise<string> {

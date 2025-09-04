@@ -4,7 +4,7 @@ import * as React from "react"
 import { format, isSameDay } from "date-fns"
 import { Calendar as CalendarIcon, Loader2 } from "lucide-react"
 
-import { getGames, type Game } from "@/lib/nhl-api"
+import { getGames, type Game } from "@/lib/nhl-games"
 
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -196,11 +196,7 @@ function GameCard({ game }: { game: Game }) {
     }
   }
 
-  // Some formatting functions for odds
-  const fmtML = (n: number | null | undefined) =>
-    n == null ? 'Ⓧ' : (n > 0 ? `+${n}` : `${n}`);
-
-  const fmtSpread = (n: number | null | undefined) =>
+  const fmtOdds = (n: number | null | undefined) =>
     n == null ? 'Ⓧ' : (n > 0 ? `+${n}` : `${n}`);
 
   return (
@@ -232,7 +228,8 @@ function GameCard({ game }: { game: Game }) {
                 <div className="flex flex-col items-center">
                   <TeamDisplay team={game.awayTeam} />
                   <div className="text-[11px] mt-1">
-                    {fmtML(game.odds?.away.moneyline)} / {fmtSpread(game.odds?.away.pointSpread)}
+                    {fmtOdds(game.odds?.away.moneyline)} / {fmtOdds(game.odds?.away.pointSpread)}
+                    ({fmtOdds(game.odds?.away.spreadOdds)})
                   </div>
                 </div>
 
@@ -247,16 +244,16 @@ function GameCard({ game }: { game: Game }) {
                   ) : (
                     <div className="text-lg font-semibold font-headline text-muted-foreground">VS</div>
                   )}
-                  {game.odds?.overUnder != null && (
-                    <div className="mt-1 text-[11px]">O/U {game.odds.overUnder}</div>
-                  )}
-                </div>
+                    <div className="mt-1 text-[11px]">o
+                      {game.odds?.overUnder} ({fmtOdds(game.odds?.overOdds)})</div>
+                  </div>
 
                 {/* Home team + odds */}
                 <div className="flex flex-col items-center">
                   <TeamDisplay team={game.homeTeam} />
                   <div className="text-[11px] mt-1">
-                    {fmtML(game.odds?.home.moneyline)} / {fmtSpread(game.odds?.home.pointSpread)}
+                    {fmtOdds(game.odds?.home.moneyline)} / {fmtOdds(game.odds?.home.pointSpread)}
+                    ({fmtOdds(game.odds?.home.spreadOdds)})
                   </div>
                 </div>
               </div>

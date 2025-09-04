@@ -39,15 +39,18 @@ export const getTeamCity = (teamName: string) => {
   const parts = teamName.split(' ');
   if (parts.length <= 1) return teamName;
   if (parts.length > 2) {
-    if (['New', 'Tampa', 'St.', 'San', 'Los'].includes(parts[0])) {
+    if (['New', 'Tampa', 'St.', 'San', 'Los'].includes(parts[0]))
       return `${parts[0]} ${parts[1]}`;
-    }
   }
-  return parts.slice(0, -1).join(' ');
+  return parts[0];
 };
 
 export const getTeamName = (teamName: string) => {
   if (!teamName) return 'Team';
   const parts = teamName.split(' ');
+  if (parts.length > 2) {
+    if (['Columbus', 'Detroit', 'Toronto', 'Vegas'].includes(parts[0]))
+      return `${parts[1]} ${parts[2]}`;
+  }
   return parts[parts.length - 1];
 };
