@@ -49,7 +49,7 @@ function GameCard({ game }: { game: Game }) {
       </div>
       <div className="flex flex-col">
         <span className="font-semibold font-headline text-lg leading-tight">{team.city}</span>
-        <span className="font-body text-base text-muted-foreground leading-tight">{team.name}</span>
+        <span className="font-semibold font-headline text-lg leading-tight">{team.name}</span>
       </div>
     </div>
   )
@@ -196,6 +196,12 @@ function GameCard({ game }: { game: Game }) {
     }
   }
 
+  // Some formatting functions for odds
+  const fmtML = (n: number | null | undefined) =>
+    n == null ? 'Ⓧ' : (n > 0 ? `+${n}` : `${n}`);
+
+  const fmtSpread = (n: number | null | undefined) =>
+    n == null ? 'Ⓧ' : (n > 0 ? `+${n}` : `${n}`);
 
   return (
     <Card
@@ -220,18 +226,39 @@ function GameCard({ game }: { game: Game }) {
                 <span>{game.status === "FINAL" ? "FINAL" : game.gameTime}</span>
                 <HockeyPuckIcon className="w-4 h-4 text-gray-400" />
               </div>
+
               <div className="grid grid-cols-[1fr,auto,1fr] items-center gap-4">
-                <TeamDisplay team={game.awayTeam} />
-                {game.status !== "SCHEDULED" ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <span className="text-4xl font-bold font-headline">{game.awayScore}</span>
-                    <span className="text-xl text-muted-foreground">-</span>
-                    <span className="text-4xl font-bold font-headline">{game.homeScore}</span>
+                {/* Away team + odds */}
+                <div className="flex flex-col items-center">
+                  <TeamDisplay team={game.awayTeam} />
+                  <div className="text-[11px] mt-1">
+                    {fmtML(game.odds?.away.moneyline)} / {fmtSpread(game.odds?.away.pointSpread)}
                   </div>
-                ) : (
-                  <div className="text-lg font-semibold font-headline text-muted-foreground">VS</div>
-                )}
-                <TeamDisplay team={game.homeTeam} />
+                </div>
+
+                {/* Score/VS + centered O/U */}
+                <div className="flex flex-col items-center justify-center">
+                  {game.status !== "SCHEDULED" ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="text-4xl font-bold font-headline">{game.awayScore}</span>
+                      <span className="text-xl text-bold font-headline">-</span>
+                      <span className="text-4xl font-bold font-headline">{game.homeScore}</span>
+                    </div>
+                  ) : (
+                    <div className="text-lg font-semibold font-headline text-muted-foreground">VS</div>
+                  )}
+                  {game.odds?.overUnder != null && (
+                    <div className="mt-1 text-[11px]">O/U {game.odds.overUnder}</div>
+                  )}
+                </div>
+
+                {/* Home team + odds */}
+                <div className="flex flex-col items-center">
+                  <TeamDisplay team={game.homeTeam} />
+                  <div className="text-[11px] mt-1">
+                    {fmtML(game.odds?.home.moneyline)} / {fmtSpread(game.odds?.home.pointSpread)}
+                  </div>
+                </div>
               </div>
             </div>
 

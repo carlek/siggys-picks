@@ -1,6 +1,8 @@
 'use server';
 
 import { formatInTimeZone } from 'date-fns-tz';
+import { getTeamCity, getTeamName, teamColors } from './nhl-teams';
+import { GameOdds, getOddsForEvents } from './nhl-odds';
 
 export interface Team {
   id: number;
@@ -20,60 +22,13 @@ export interface Game {
   gameTime: string;
   recapUrl?: string;
   recapTitle?: string; // optional cache 
+
+  homeMoneyline: number | null;
+  homePointSpread: number | null;
+  awayMoneyline: number | null;
+  awayPointSpread: number | null;
+  odds: GameOdds | null;
 }
-
-const teamColors: { [key: string]: string } = {
-  'Boston Bruins': '#FFB81C',
-  'Buffalo Sabres': '#002654',
-  'Detroit Red Wings': '#CE1126',
-  'Florida Panthers': '#C8102E',
-  'Montréal Canadiens': '#AF1E2D',
-  'Ottawa Senators': '#C52032',
-  'Tampa Bay Lightning': '#002868',
-  'Toronto Maple Leafs': '#00205B',
-  'Carolina Hurricanes': '#CC0000',
-  'Columbus Blue Jackets': '#002654',
-  'New Jersey Devils': '#CE1126',
-  'New York Islanders': '#00539B',
-  'New York Rangers': '#0038A8',
-  'Philadelphia Flyers': '#F74902',
-  'Pittsburgh Penguins': '#FCB514',
-  'Washington Capitals': '#C8102E',
-  'Chicago Blackhawks': '#CF0A2C',
-  'Colorado Avalanche': '#6F263D',
-  'Dallas Stars': '#006847',
-  'Minnesota Wild': '#154734',
-  'Nashville Predators': '#FFB81C',
-  'St. Louis Blues': '#002F87',
-  'Winnipeg Jets': '#041E42',
-  'Anaheim Ducks': '#F47A38',
-  'Arizona Coyotes': '#8C2633',
-  'Calgary Flames': '#C8102E',
-  'Edmonton Oilers': '#FF4C00',
-  'Los Angeles Kings': '#111111',
-  'San Jose Sharks': '#006D75',
-  'Seattle Kraken': '#001628',
-  'Vancouver Canucks': '#00205B',
-  'Vegas Golden Knights': '#B4975A',
-};
-
-const getTeamCity = (teamName: string) => {
-  if (!teamName) return 'Unknown';
-  const parts = teamName.split(' ');
-  if (parts.length <= 1) return teamName;
-  if (parts.length > 2) {
-    if (['New', 'Tampa', 'St.', 'San', 'Los'].includes(parts[0])) {
-      return `${parts[0]} ${parts[1]}`;
-    }
-  }
-  return parts.slice(0, -1).join(' ');
-};
-
-const getTeamName = (teamName: string) => {
-  if (!teamName) return 'Team';
-  const parts = teamName.split(' ');
-  return parts[parts.length - 1];
-};
 
 const getGameStatus = (status: any): 'FINAL' | 'SCHEDULED' | 'LIVE' => {
   const state = status.type.state;
@@ -93,7 +48,7 @@ export async function getGames(date: Date): Promise<Game[]> {
     throw new Error('NHL_API_KEY is not defined in environment variables.');
   }
 
-  const url = `https://nhl-api5.p.rapidapi.com/nhlscoreboard?year=${year}&month=${month}&day=${day}`;
+  const url = `https://${apiHost}/nhlscoreboard?year=${year}&month=${month}&day=${day}`;
 
   try {
     const response = await fetch(url, {
@@ -119,6 +74,9 @@ export async function getGames(date: Date): Promise<Game[]> {
       return [];
     }
 
+    const eventIds: string[] = data.events.map((e: any) => String(e.id));
+    const oddsMap = await getOddsForEvents(eventIds); // Record<eventId, GameOdds | null>
+
     return data.events.map((event: any): Game => {
       const competition = event.competitions[0];
       const homeCompetitor = competition.competitors.find((c: any) => c.homeAway === 'home');
@@ -137,6 +95,8 @@ export async function getGames(date: Date): Promise<Game[]> {
             (l.text.toLowerCase() === "recap" || l.shortText.toLowerCase() === "recap")
           )?.href
         : undefined;
+      
+      const odds = oddsMap[String(event.id)] ?? null;
 
       return {
         id: event.id,
@@ -158,6 +118,13 @@ export async function getGames(date: Date): Promise<Game[]> {
         awayScore: parseInt(awayCompetitor.score, 10),
         gameTime: formatInTimeZone(new Date(event.date), easternTimeZone, 'h:mm a'),
         recapUrl: recapLink,
+
+        homeMoneyline: odds?.home.moneyline ?? null,
+        homePointSpread: odds?.home.pointSpread ?? null,
+        awayMoneyline: odds?.away.moneyline ?? null,
+        awayPointSpread: odds?.away.pointSpread ?? null,
+        odds, // full payload
+
       };
     });
   } catch (error: any) {
