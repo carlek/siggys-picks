@@ -490,7 +490,7 @@ export function SiggysPicksApp() {
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
           ) : games.length > 0 ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {games.map(game => (
                 <GameCard key={game.id} game={game} />
               ))}
