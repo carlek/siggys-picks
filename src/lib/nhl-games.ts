@@ -3,6 +3,7 @@
 import { formatInTimeZone } from 'date-fns-tz';
 import { getTeamCity, getTeamName, teamColors } from './nhl-teams';
 import { GameOdds, getOddsForEvents } from './nhl-odds';
+import { getTeamStats } from './nhl-stats';
 
 export interface Team {
   id: number;
@@ -36,21 +37,13 @@ export async function getGames(date: Date): Promise<Game[]> {
   const year = date.getFullYear();
   const month = (date.getMonth() + 1).toString().padStart(2, '0');
   const day = date.getDate().toString().padStart(2, '0');
-  const apiKey = process.env.NHL_API_KEY;
-  const apiHost = 'nhl-api5.p.rapidapi.com';
 
-  if (!apiKey) {
-    throw new Error('NHL_API_KEY is not defined in environment variables.');
-  }
-
-  const url = `https://${apiHost}/nhlscoreboard?year=${year}&month=${month}&day=${day}`;
+  const url = `http://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard?dates=${year}${month}${day}`;
 
   try {
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'X-RapidAPI-Key': apiKey,
-        'X-RapidAPI-Host': apiHost,
       },
       cache: 'no-store',
     });
