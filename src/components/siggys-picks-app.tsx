@@ -220,7 +220,7 @@ function GameCard({ game }: { game: Game }) {
             <div className="absolute inset-0 [backface-visibility:hidden]">
               <div className="flex justify-between items-center text-xs text-muted-foreground mb-3">
                 <span>{game.status === "FINAL" ? "FINAL" : game.gameTime}</span>
-                <HockeyPuckIcon className="w-4 h-4 text-gray-400" />
+                <HockeyRinkIcon className="w-8 h-8 text-gray-400" />
               </div>
 
               <div className="grid grid-cols-[1fr,auto,1fr] items-center gap-4">

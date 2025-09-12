@@ -2,8 +2,9 @@
 
 import { formatInTimeZone } from 'date-fns-tz';
 import { getTeamCity, getTeamName, teamColors } from './nhl-teams';
-import { GameOdds, getOddsForEvents } from './nhl-odds';
-import { getTeamStats } from './nhl-stats';
+import { GameOdds } from './nhl-odds';
+import { GameStats } from './nhl-stats'
+import { getOddsAndStatsForEvents } from './nhl-espn-api';
 
 export interface Team {
   id: number;
@@ -24,6 +25,7 @@ export interface Game {
   recapUrl?: string;
   recapTitle?: string; // optional cache 
   odds: GameOdds | null;
+  stats: GameStats | null;
 }
 
 const getGameStatus = (status: any): 'FINAL' | 'SCHEDULED' | 'LIVE' => {
@@ -63,7 +65,10 @@ export async function getGames(date: Date): Promise<Game[]> {
     }
 
     const eventIds: string[] = data.events.map((e: any) => String(e.id));
-    const oddsMap = await getOddsForEvents(eventIds); // Record<eventId, GameOdds | null>
+
+    // fetch summary for each event and extract odds and stats
+    // bothMap[eventId] -> { odds: GameOdds|null, stats: GameStats|null }
+    const bothMap = await getOddsAndStatsForEvents(eventIds);
 
     return data.events.map((event: any): Game => {
       const competition = event.competitions[0];
@@ -73,7 +78,7 @@ export async function getGames(date: Date): Promise<Game[]> {
       const awayTeamName = awayCompetitor.team.displayName;
       const easternTimeZone = 'America/New_York';
 
-      // Find the ESPN recap link if present
+      // Find the ESPN link if present
       const recapLink = Array.isArray(event.links)
         ? event.links.find(
           (l: any) =>
@@ -84,7 +89,7 @@ export async function getGames(date: Date): Promise<Game[]> {
           )?.href
         : undefined;
       
-      const gameOdds = oddsMap[String(event.id)] ?? null;
+      const tupleOddsStats = bothMap[String(event.id)] ?? { odds: null, stats: null };
 
       return {
         id: event.id,
@@ -106,7 +111,9 @@ export async function getGames(date: Date): Promise<Game[]> {
         awayScore: parseInt(awayCompetitor.score, 10),
         gameTime: formatInTimeZone(new Date(event.date), easternTimeZone, 'h:mm a'),
         recapUrl: recapLink,
-        odds: gameOdds, 
+        odds: tupleOddsStats.odds,
+        stats: tupleOddsStats.stats
+        ,
       };
     });
   } catch (error: any) {

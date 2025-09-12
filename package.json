@@ -61,6 +61,7 @@
   "devDependencies": {
     "@types/cheerio": "^0.22.35",
     "@types/he": "^1.2.3",
+    "@types/jquery": "^3.5.33",
     "@types/node": "*",
     "@types/react": "^18",
     "@types/react-dom": "^18",

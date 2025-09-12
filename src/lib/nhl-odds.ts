@@ -22,7 +22,7 @@ const toNum = (v: any): number | null => {
 };
 
 // Parse ESPN summary JSON -> GameOdds ---
-function parseEspnOdds(json: any): GameOdds | null {
+export async function parseEspnOdds(json: any):  Promise<GameOdds | null> {
   const pc = Array.isArray(json?.pickcenter) ? json.pickcenter : null;
   if (!pc || pc.length === 0) return null;
 
