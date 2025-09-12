@@ -13,6 +13,9 @@ import { HockeyPuckIcon, HockeyRinkIcon } from "@/components/icons"
 import { useAuth } from "@/hooks/useAuth";
 import { AuthStrip } from "@/components/auth/AuthStrip";
 
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { motion } from "framer-motion";
+
 import { useToast } from "@/hooks/use-toast"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
@@ -27,6 +30,13 @@ function GameCard({ game }: { game: Game }) {
   const [recapTitle, setRecapTitle] = React.useState<string | null>(null)
   const [recapLoading, setRecapLoading] = React.useState(false)
   const noRecapCopy = "😿 Sorry, this game summary is lost under a couch. -Siggy- 🐈‍⬛";
+
+  // Stats dialog
+  const [statsOpen, setStatsOpen] = React.useState(false)
+  const fmt = (n: number | null | undefined, opts?: { pct?: boolean }) => {
+    if (n == null || Number.isNaN(n)) return "—"
+    return opts?.pct ? `${n.toFixed(1)}%` : n.toFixed(2)
+  }
 
   // Summary toggle
   const [summaryOpen, setSummaryOpen] = React.useState(false)
@@ -218,9 +228,17 @@ function GameCard({ game }: { game: Game }) {
           >
             {/* Front Face */}
             <div className="absolute inset-0 [backface-visibility:hidden]">
+
               <div className="flex justify-between items-center text-xs text-muted-foreground mb-3">
                 <span>{game.status === "FINAL" ? "FINAL" : game.gameTime}</span>
-                <HockeyRinkIcon className="w-8 h-8 text-gray-400" />
+                <button
+                  type="button"
+                  aria-label="View team stats"
+                  className="rounded-md p-1 hover:bg-accent/40 focus:outline-none focus:ring-2 focus:ring-primary"
+                  onClick={(e) => { e.stopPropagation(); setStatsOpen(true); }}
+                >
+                  <HockeyRinkIcon className="w-6 h-6 text-gray-400" />
+                </button>
               </div>
 
               <div className="grid grid-cols-[1fr,auto,1fr] items-center gap-4">
@@ -347,9 +365,70 @@ function GameCard({ game }: { game: Game }) {
               </div>
             </div>
 
-
           </div>
         </div>
+
+        {/* Stats dialog */}
+        <Dialog open={statsOpen} onOpenChange={(v) => setStatsOpen(v)}>
+          <DialogContent
+            className="max-w-md sm:max-w-lg"
+            aria-describedby={undefined}         // prevents radix dialog warning
+            onClick={(e) => e.stopPropagation()} // prevent closing/flip on inner clicks
+          >
+            <motion.div
+                initial={{ opacity: 0, scale: 0.92 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.96 }}
+                transition={{ type: "spring", stiffness: 420, damping: 30 }}
+                className="max-w-md sm:max-w-lg rounded-xl border bg-card shadow-2xl"
+              >
+                <DialogHeader>
+                  <DialogTitle className="font-headline text-center text-base">
+                    Team Stats –  {game.awayTeam.city} @ {game.homeTeam.city}
+                  </DialogTitle>
+                </DialogHeader>
+
+                <div className="mt-2 border rounded-lg overflow-hidden">
+                  <div className="grid grid-cols-[1.2fr,1fr,1fr] text-sm">
+                    {/* Header row */}
+                    <div className="bg-muted/60 px-3 py-2 font-semibold">Metric</div>
+                    <div className="bg-muted/60 px-3 py-2 font-semibold text-center">
+                      {game.awayTeam.name}
+                    </div>
+                    <div className="bg-muted/60 px-3 py-2 font-semibold text-center">
+                      {game.homeTeam.name}
+                    </div>
+
+                    {/* GF/G */}
+                    <div className="px-3 py-2">GF / Game</div>
+                    <div className="px-3 py-2 text-center">{fmt(game.stats?.away.goalsForPerGame)}</div>
+                    <div className="px-3 py-2 text-center">{fmt(game.stats?.home.goalsForPerGame)}</div>
+
+                    {/* GA/G */}
+                    <div className="px-3 py-2 bg-muted/20">GA / Game</div>
+                    <div className="px-3 py-2 text-center bg-muted/20">{fmt(game.stats?.away.goalsAgainstPerGame)}</div>
+                    <div className="px-3 py-2 text-center bg-muted/20">{fmt(game.stats?.home.goalsAgainstPerGame)}</div>
+
+                    {/* PP% */}
+                    <div className="px-3 py-2">PP %</div>
+                    <div className="px-3 py-2 text-center">{fmt(game.stats?.away.powerPlayPct, { pct: true })}</div>
+                    <div className="px-3 py-2 text-center">{fmt(game.stats?.home.powerPlayPct, { pct: true })}</div>
+
+                    {/* PK% */}
+                    <div className="px-3 py-2 bg-muted/20">PK %</div>
+                    <div className="px-3 py-2 text-center bg-muted/20">{fmt(game.stats?.away.penaltyKillPct, { pct: true })}</div>
+                    <div className="px-3 py-2 text-center bg-muted/20">{fmt(game.stats?.home.penaltyKillPct, { pct: true })}</div>
+                  </div>
+                </div>
+
+                {/* footer notice */}
+                <p className="text-center text-xs text-muted-foreground mt-2">
+                  Live values from ESPN may update periodically.
+                </p>
+            </motion.div>
+          </DialogContent>
+        </Dialog>
+
       </CardContent>
     </Card>
   )
