@@ -5,6 +5,7 @@ import { format, isSameDay } from "date-fns"
 import { Calendar as CalendarIcon, Loader2 } from "lucide-react"
 
 import { getGames, type Game } from "@/lib/nhl-games"
+import { suggestSiggysPick } from "@/lib/nhl-picks"
 
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -15,6 +16,7 @@ import { AuthStrip } from "@/components/auth/AuthStrip";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
 
 import { useToast } from "@/hooks/use-toast"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -206,6 +208,37 @@ function GameCard({ game }: { game: Game }) {
     }
   }
 
+  // derive Siggys pick
+  const siggysPick = React.useMemo(() => {
+    return suggestSiggysPick({
+      home: {
+        stats: game.stats?.home,
+        moneyline: game.odds?.home.moneyline ?? null,
+      },
+      away: {
+        stats: game.stats?.away,
+        moneyline: game.odds?.away.moneyline ?? null,
+      },
+      homePointSpread: game.odds?.home.pointSpread ?? null,
+      awayPointSpread: game.odds?.away.pointSpread ?? null,
+    });
+  }, [game.stats, game.odds, game.homeTeam, game.awayTeam]);
+
+  const pickTeamName =
+    siggysPick.moneylinePick === "HOME"
+      ? `${game.homeTeam.city} ${game.homeTeam.name}`
+      : `${game.awayTeam.city} ${game.awayTeam.name}`;
+
+  const pucklineBlurb = siggysPick.underdogPuckline
+    ? ` • +${Math.abs(siggysPick.underdogPuckline.line)} on the ${
+        siggysPick.underdogPuckline.side === "HOME"
+          ? `${game.homeTeam.name}`
+          : `${game.awayTeam.name}`
+      } (${siggysPick.underdogPuckline.confidence}% conf)`
+    : "";
+
+  const siggyOneLiner = `I'll take ${pickTeamName} ML (${siggysPick.moneylineConfidence}%).${pucklineBlurb} — meow.`;
+
   const fmtOdds = (n: number | null | undefined) =>
     n == null ? 'Ⓧ' : (n > 0 ? `+${n}` : `${n}`);
 
@@ -368,7 +401,7 @@ function GameCard({ game }: { game: Game }) {
           </div>
         </div>
 
-        {/* Stats dialog */}
+        {/* Stats and Pick dialog */}
         <Dialog open={statsOpen} onOpenChange={(v) => setStatsOpen(v)}>
           <DialogContent
             className="max-w-md sm:max-w-lg"
@@ -379,17 +412,79 @@ function GameCard({ game }: { game: Game }) {
                 initial={{ opacity: 0, scale: 0.92 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.96 }}
-                transition={{ type: "spring", stiffness: 420, damping: 30 }}
+                transition={{ duration: 0.8, ease: "circOut" }}
                 className="max-w-md sm:max-w-lg rounded-xl border bg-card shadow-2xl"
               >
+
                 <DialogHeader>
                   <DialogTitle className="font-headline text-center text-base">
-                    Team Stats –  {game.awayTeam.city} @ {game.homeTeam.city}
+                    Siggys Pick & Stats - {game.awayTeam.city} @ {game.homeTeam.city}
                   </DialogTitle>
                 </DialogHeader>
 
+                {/* --- Siggy's pick callout --- */}
+                <div className="mt-3 rounded-lg border bg-background p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-sm font-semibold">Siggy’s Pick</div>
+                    <div className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                      {siggysPick.moneylineConfidence}% / {siggysPick.underdogPuckline?.confidence}%
+                    </div>
+                  </div>
+
+                  <div className="mt-1 text-sm">
+                    ML:&nbsp;
+                    <span className="font-semibold">
+                      {siggysPick.moneylinePick === "HOME" ? game.homeTeam.name : game.awayTeam.name}
+                    </span>
+                    &nbsp;({siggysPick.moneylinePick === "HOME" ? fmtOdds(game.odds?.home.moneyline) : fmtOdds(game.odds?.away.moneyline)})
+                    {siggysPick.underdogPuckline && (
+                      <>
+                        <span className="mx-2 text-bold">•</span>
+                        <span>
+                          Dog:&nbsp;
+                          <span className="font-semibold">
+                            {siggysPick.underdogPuckline.side === "HOME" ? game.homeTeam.name : game.awayTeam.name}
+                          </span>
+                          &nbsp;({siggysPick.underdogPuckline.side === "HOME" ?
+                              fmtOdds(game.odds?.home.pointSpread)
+                            : fmtOdds(game.odds?.away.pointSpread)}
+                            &nbsp;/&nbsp;
+                            {siggysPick.underdogPuckline.side === "HOME" ?
+                              fmtOdds(game.odds?.home.spreadOdds)
+                            : fmtOdds(game.odds?.away.spreadOdds)})
+                        </span>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Siggy one-liner */}
+                  <p className="mt-1 text-xs text-bold italic">
+                    {siggyOneLiner}
+                  </p>
+
+                  {/* Rationale (collapsible) */}
+                  <Accordion type="single" collapsible className="mt-1">
+                    <AccordionItem value="why">
+                      <AccordionTrigger className="text-xs">Why this pick?</AccordionTrigger>
+                      <AccordionContent>
+                        {siggysPick.rationale?.length ? (
+                          <ul className="list-disc pl-5 space-y-1 text-xs text-bole">
+                            {siggysPick.rationale.map((line, i) => (
+                              <li key={i}>{line}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">No rationale available.</p>
+                        )}
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                </div>
+
+
+
                 <div className="mt-2 border rounded-lg overflow-hidden">
-                  <div className="grid grid-cols-[1.2fr,1fr,1fr] text-sm">
+                  <div className="grid grid-cols-[1.2fr,1fr,1fr] text-xs">
                     {/* Header row */}
                     <div className="bg-muted/60 px-3 py-2 font-semibold">Metric</div>
                     <div className="bg-muted/60 px-3 py-2 font-semibold text-center">

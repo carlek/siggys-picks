@@ -16,9 +16,9 @@ export async function fetchEspnSummary(eventId: string | number): Promise<any | 
 }
 
 // Extract odds from a pre-fetched summary
-export function oddsFromSummary(summary: any): GameOdds | null {
+export async function oddsFromSummary(summary: any): Promise<GameOdds | null> {
   if (!summary) return null;
-  return parseEspnOdds(summary);
+  return await parseEspnOdds(summary);
 }
 
 // Extract stats from a pre-fetched summary (uses team abbreviations found inside it)

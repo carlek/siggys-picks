@@ -30,6 +30,7 @@ export const teamColors: { [key: string]: string } = {
   'Los Angeles Kings': '#111111',
   'San Jose Sharks': '#006D75',
   'Seattle Kraken': '#001628',
+  'Utah Mammoth': '#becbcd',
   'Vancouver Canucks': '#00205B',
   'Vegas Golden Knights': '#B4975A',
 };
