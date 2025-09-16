@@ -136,7 +136,7 @@ _=> pick + confidence._
 3. **Picks:**
 
    * **Moneyline pick** = side with higher blended probability; **confidence** scales with the gap.
-   * **Underdog +1.5** = offered when the dog is reasonably live by market and/or stats—then confidence is computed against a target.
+   * **Underdog +1.5** = offered when the dog is reasonably live by market and/or stats then confidence is computed against a target.
 
 ---
 
@@ -155,7 +155,7 @@ _=> pick + confidence._
     "puckline": { "dogViableMarketProbMax": 0.47, "minConfidence": 45 } }
   ```
 
-* **Special-teams emphasis week:**
+* **Special-teams emphasis:**
 
   ```json
   { "statWeights": { "gf": 0.33, "ga": 0.27, "pp": 0.24, "pk": 0.16 } }
