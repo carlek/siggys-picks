@@ -5,7 +5,7 @@ import { format, isSameDay } from "date-fns"
 import { Calendar as CalendarIcon, Loader2 } from "lucide-react"
 
 import { getGames, type Game } from "@/lib/nhl-games"
-import { suggestSiggysPick } from "@/lib/nhl-picks"
+import { suggestSiggysPick, type PicksConfig } from "@/lib/nhl-picks"
 
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -17,6 +17,7 @@ import { AuthStrip } from "@/components/auth/AuthStrip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { useToast } from "@/hooks/use-toast"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -45,7 +46,7 @@ function GameCard({ game }: { game: Game }) {
   const [summaryLoading, setSummaryLoading] = React.useState(false)
   const [summaryText, setSummaryText] = React.useState<string | null>(null)
   const [summaryError, setSummaryError] = React.useState<string | null>(null)
-  
+
   // Typing effect
   const [typed, setTyped] = React.useState("");
   const [typing, setTyping] = React.useState(false);
@@ -208,39 +209,69 @@ function GameCard({ game }: { game: Game }) {
     }
   }
 
-  // derive Siggys pick
+  // Pick Presets
+  type PresetKey = "safe" | "balanced" | "dog";
+  const [preset, setPreset] = React.useState<PresetKey>(() => {
+    if (typeof window === "undefined") return "balanced";
+    return (localStorage.getItem("siggy-preset") as PresetKey) || "balanced";
+  });
+
+  // config overrides that will be merged with your JSON config on each pick
+  const PRESET_OVERRIDES: Record<PresetKey, Partial<import("@/lib/nhl-picks").PicksConfig>> = {
+    safe: {
+      marketWeight: 0.72,
+      siggy: { statsCloseThreshold: 0.06, juicyUnderdogMinML: 160, underdogBump: 0.015 },
+      puckline: { dogViableMarketProbMax: 0.42, minConfidence: 45 }
+    },
+    balanced: {
+      // matches your defaults (can be empty, or explicitly repeat)
+    },
+    dog: {
+      marketWeight: 0.55,
+      siggy: { statsCloseThreshold: 0.09, juicyUnderdogMinML: 140, underdogBump: 0.022 },
+      puckline: { dogViableMarketProbMax: 0.47, minConfidence: 45 }
+    }
+  };
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("siggy-preset", preset);
+    }
+  }, [preset]);
+
   const siggysPick = React.useMemo(() => {
-    return suggestSiggysPick({
-      home: {
-        stats: game.stats?.home,
-        moneyline: game.odds?.home.moneyline ?? null,
+    return suggestSiggysPick(
+      {
+        home: { stats: game.stats?.home, moneyline: game.odds?.home.moneyline ?? null },
+        away: { stats: game.stats?.away, moneyline: game.odds?.away.moneyline ?? null },
+        homePointSpread: game.odds?.home.pointSpread ?? null,
+        awayPointSpread: game.odds?.away.pointSpread ?? null,
       },
-      away: {
-        stats: game.stats?.away,
-        moneyline: game.odds?.away.moneyline ?? null,
-      },
-      homePointSpread: game.odds?.home.pointSpread ?? null,
-      awayPointSpread: game.odds?.away.pointSpread ?? null,
-    });
-  }, [game.stats, game.odds, game.homeTeam, game.awayTeam]);
+      PRESET_OVERRIDES[preset] // <— merged on the fly
+    );
+  }, [game.stats, game.odds, preset]);
 
   const pickTeamName =
     siggysPick.moneylinePick === "HOME"
-      ? `${game.homeTeam.city} ${game.homeTeam.name}`
-      : `${game.awayTeam.city} ${game.awayTeam.name}`;
+      ? `${game.homeTeam.name}` : `${game.awayTeam.name}`;
 
   const pucklineBlurb = siggysPick.underdogPuckline
     ? ` • +${Math.abs(siggysPick.underdogPuckline.line)} on the ${
         siggysPick.underdogPuckline.side === "HOME"
           ? `${game.homeTeam.name}`
           : `${game.awayTeam.name}`
-      } (${siggysPick.underdogPuckline.confidence}% conf)`
+      } (+${siggysPick.underdogPuckline.confidence}%)`
     : "";
 
-  const siggyOneLiner = `I'll take ${pickTeamName} ML (${siggysPick.moneylineConfidence}%).${pucklineBlurb} — meow.`;
+  const siggyOneLiner = `Sig picks ${pickTeamName} ML (+${siggysPick.moneylineConfidence}%).${pucklineBlurb} — meow.`;
 
   const fmtOdds = (n: number | null | undefined) =>
     n == null ? 'Ⓧ' : (n > 0 ? `+${n}` : `${n}`);
+
+  const presetTab =
+    "h-7 px-2.5 text-[11px] leading-none rounded-md transition-colors " +
+    "data-[state=active]:bg-background data-[state=active]:text-foreground " +
+    "data-[state=inactive]:text-muted-foreground hover:text-bold";
 
   return (
     <Card
@@ -418,9 +449,23 @@ function GameCard({ game }: { game: Game }) {
 
                 <DialogHeader>
                   <DialogTitle className="font-headline text-center text-base">
-                    Siggys Pick & Stats - {game.awayTeam.city} @ {game.homeTeam.city}
+                    Siggys Picker - {game.awayTeam.city} @ {game.homeTeam.city}
                   </DialogTitle>
                 </DialogHeader>
+
+                {/* --- preset pick options --- */}
+                <div className="flex justify-center mt-1">
+                  <Tabs value={preset} onValueChange={(v) => setPreset(v as PresetKey)}>
+                    <TabsList
+                      className="h-8 p-0 gap-1 bg-muted/40 rounded-lg backdrop-blur-sm
+                                border border-border/50"
+                    >
+                      <TabsTrigger className={presetTab} value="safe">Safe</TabsTrigger>
+                      <TabsTrigger className={presetTab} value="balanced">Balanced</TabsTrigger>
+                      <TabsTrigger className={presetTab} value="dog">Aggressive</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
 
                 {/* --- Siggy's pick callout --- */}
                 <div className="mt-3 rounded-lg border bg-background p-3">
@@ -480,8 +525,6 @@ function GameCard({ game }: { game: Game }) {
                     </AccordionItem>
                   </Accordion>
                 </div>
-
-
 
                 <div className="mt-2 border rounded-lg overflow-hidden">
                   <div className="grid grid-cols-[1.2fr,1fr,1fr] text-xs">

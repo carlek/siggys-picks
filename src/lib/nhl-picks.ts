@@ -11,8 +11,6 @@ export interface SiggysPick {
 
 /* -------------------- Config loading -------------------- */
 
-// If you prefer YAML, install "yaml" and parse a .yaml file similarly.
-// Here we use JSON with a safe default fallback.
 import cfgJson from './nhl-picks.config.json';
 
 type Bounds = { min: number; max: number };
@@ -66,7 +64,33 @@ function loadConfig(): PicksConfig {
   }
 }
 
-const CFG = loadConfig();
+// "Deep" merge for config shape to keep nested objects
+type DeepPartial<T> = { [K in keyof T]?: T[K] extends object ? DeepPartial<T[K]> : T[K] };
+
+function mergeConfig(base: PicksConfig, ov?: DeepPartial<PicksConfig>): PicksConfig {
+  if (!ov) return base;
+  return {
+    ...base,
+    ...ov,
+    statsDefaults: { ...base.statsDefaults, ...ov.statsDefaults },
+    statsBounds: {
+      ...base.statsBounds,
+      gfPerGame: { ...base.statsBounds.gfPerGame, ...ov.statsBounds?.gfPerGame },
+      gaPerGame: { ...base.statsBounds.gaPerGame, ...ov.statsBounds?.gaPerGame },
+      ppPct:     { ...base.statsBounds.ppPct,     ...ov.statsBounds?.ppPct },
+      pkPct:     { ...base.statsBounds.pkPct,     ...ov.statsBounds?.pkPct },
+    },
+    statWeights: { ...base.statWeights, ...ov.statWeights },
+    siggy: { ...base.siggy, ...ov.siggy },
+    puckline: { ...base.puckline, ...ov.puckline },
+  };
+}
+
+// Resolve active config, optionally applying UI overrides.
+export function getConfig(overrides?: DeepPartial<PicksConfig>): PicksConfig {
+  const base = loadConfig();
+  return mergeConfig(base, overrides);
+}
 
 /* -------------------- Utils -------------------- */
 
@@ -95,10 +119,10 @@ function scale01(v: number, b: Bounds) {
   return clamp01((v - b.min) / (b.max - b.min));
 }
 
-function statStrength(s: StatInput): number {
-  const d = CFG.statsDefaults;
-  const b = CFG.statsBounds;
-  const w = CFG.statWeights;
+function statStrength(cfg: PicksConfig, s: StatInput): number {
+  const d = cfg.statsDefaults;
+  const b = cfg.statsBounds;
+  const w = cfg.statWeights;
 
   const gf = s.goalsForPerGame ?? d.goalsForPerGame;
   const ga = s.goalsAgainstPerGame ?? d.goalsAgainstPerGame;
@@ -113,13 +137,17 @@ function statStrength(s: StatInput): number {
   return clamp01(w.gf * gf01 + w.ga * ga01 + w.pp * pp01 + w.pk * pk01);
 }
 
-// suggestion for pick(s)
-export function suggestSiggysPick(input: {
-  home: { stats?: StatInput; moneyline?: number | null };
-  away: { stats?: StatInput; moneyline?: number | null };
-  homePointSpread?: number | null;
-  awayPointSpread?: number | null;
-}): SiggysPick {
+// Main Suggestor
+export function suggestSiggysPick(
+  input: {
+    home: { stats?: StatInput; moneyline?: number | null };
+    away: { stats?: StatInput; moneyline?: number | null };
+    homePointSpread?: number | null;
+    awayPointSpread?: number | null;
+  },
+  overrides?: DeepPartial<PicksConfig>   // <-- new optional overrides
+): SiggysPick {
+  const CFG = getConfig(overrides);
   const rationale: string[] = [];
 
   // market probs
@@ -137,8 +165,8 @@ export function suggestSiggysPick(input: {
   }
 
   // stat strength
-  const sHome = statStrength(input.home.stats ?? ({} as any));
-  const sAway = statStrength(input.away.stats ?? ({} as any));
+  const sHome = statStrength(CFG, input.home.stats ?? ({} as any));
+  const sAway = statStrength(CFG, input.away.stats ?? ({} as any));
   rationale.push(`Stats strength Home ${Math.round(sHome*100)}%, Away ${Math.round(sAway*100)}%.`);
 
   // blend and clamp
@@ -188,7 +216,7 @@ export function suggestSiggysPick(input: {
           Math.round((PL.dogTargetProb - pHomeMkt + (statsClose ? PL.extraConfIfStatsClose : 0)) * PL.confScale)
         );
         underdogPuckline = { side: 'HOME', line: +stdLine, confidence: Math.max(PL.minConfidence, conf) };
-        rationale.push('Siggy likes a home dog +1.5.');
+        rationale.push('Siggy 🖤 home dog +1.5.');
       }
     } else if (awayIsDog && (awayPL === +stdLine || awayPL == null)) {
       if (pAwayMkt <= PL.dogViableMarketProbMax || statsClose) {
@@ -197,7 +225,7 @@ export function suggestSiggysPick(input: {
           Math.round((PL.dogTargetProb - pAwayMkt + (statsClose ? PL.extraConfIfStatsClose : 0)) * PL.confScale)
         );
         underdogPuckline = { side: 'AWAY', line: +stdLine, confidence: Math.max(PL.minConfidence, conf) };
-        rationale.push('Siggy likes an away dog +1.5.');
+        rationale.push('Siggy 🖤 visitor dog +1.5.');
       }
     }
   }
