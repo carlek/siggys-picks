@@ -1,0 +1,40 @@
+{
+  "marketWeight": 0.62,
+
+  "statsDefaults": {
+    "goalsForPerGame": 3.0,
+    "goalsAgainstPerGame": 3.0,
+    "powerPlayPct": 20.0,
+    "penaltyKillPct": 78.0
+  },
+
+  "statsBounds": {
+    "gfPerGame": { "min": 2.2, "max": 4.0 },
+    "gaPerGame": { "min": 2.0, "max": 4.0 },
+    "ppPct":     { "min": 12.0, "max": 30.0 },
+    "pkPct":     { "min": 70.0, "max": 88.0 }
+  },
+
+  "statWeights": {
+    "gf": 0.38,
+    "ga": 0.32,
+    "pp": 0.18,
+    "pk": 0.12
+  },
+
+  "siggy": {
+    "statsCloseThreshold": 0.07,
+    "juicyUnderdogMinML": 150,
+    "underdogBump": 0.018
+  },
+
+  "puckline": {
+    "assumeStandardIfMissing": true,
+    "standardLine": 1.5,
+    "dogViableMarketProbMax": 0.45,
+    "minConfidence": 40,
+    "extraConfIfStatsClose": 0.03,
+    "confScale": 200,
+    "dogTargetProb": 0.55
+  }
+}
