@@ -4,7 +4,7 @@ import * as React from "react"
 import { format, isSameDay } from "date-fns"
 import { Calendar as CalendarIcon, Loader2 } from "lucide-react"
 
-import { getGames, type Game } from "@/lib/nhl-games"
+import { type Game } from "@/lib/nhl-games"
 import { suggestSiggysPick, type PicksConfig } from "@/lib/nhl-picks"
 
 import { Button } from "@/components/ui/button"
@@ -470,7 +470,7 @@ function GameCard({ game }: { game: Game }) {
                 {/* --- Siggy's pick callout --- */}
                 <div className="mt-3 rounded-lg border bg-background p-3">
                   <div className="flex items-center justify-between gap-2">
-                    <div className="text-sm font-semibold">Siggy’s Pick</div>
+                    <div className="text-sm font-semibold">Siggy's Pick</div>
                     <div className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">
                       {siggysPick.moneylineConfidence}% / {siggysPick.underdogPuckline?.confidence}%
                     </div>
@@ -582,29 +582,33 @@ export function SiggysPicksApp() {
   const { user, loading: authLoading } = useAuth()
 
   React.useEffect(() => {
-    if (!selectedDate) return
+    if (!selectedDate) return;
+    if (authLoading) return;
+    if (!user) { setIsLoading(false); setGames([]); return; }
 
-    // Wait until authLoading is over and a user is present
-    if (authLoading) return
-    if (!user) {
-      setIsLoading(false)
-      setGames([])
-      return
-    }
-
-    setIsLoading(true)
-    getGames(selectedDate)
-      .then(fetchedGames => setGames(fetchedGames))
-      .catch(err => {
-        console.error("Error fetching games:", err)
+    (async () => {
+      try {
+        setIsLoading(true);
+        const dateStr = selectedDate.toISOString().slice(0, 10); // YYYY-MM-DD
+        const res = await fetch(`/api/games?date=${dateStr}`, { cache: "no-store" });
+        if (!res.ok) {
+          const errJson = await res.json().catch(() => ({}));
+          throw new Error(errJson?.detail || `HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        setGames(data.games as Game[]);
+      } catch (err: any) {
+        console.error("Error fetching games:", err);
         toast({
           title: "Error Fetching Games",
-          description: `Could not fetch game data: ${err.message}. Check the console for more details.`,
+          description: `Could not fetch game data: ${String(err?.message || err)}`,
           variant: "destructive",
-        })
-      })
-      .finally(() => setIsLoading(false))
-  }, [selectedDate, user, authLoading, toast])
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, [selectedDate, user, authLoading, toast]);
 
   const handleDateSelect = (date: Date | undefined) => {
     if (!date) return

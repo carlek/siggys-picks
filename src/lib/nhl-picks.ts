@@ -14,7 +14,7 @@ export interface SiggysPick {
 import cfgJson from './nhl-picks.config.json';
 
 type Bounds = { min: number; max: number };
-interface PicksConfig {
+export interface PicksConfig {
   marketWeight: number;
   statsDefaults: {
     goalsForPerGame: number; goalsAgainstPerGame: number;
