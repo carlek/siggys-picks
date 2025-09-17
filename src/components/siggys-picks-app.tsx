@@ -586,18 +586,22 @@ export function SiggysPicksApp() {
     if (authLoading) return;
     if (!user) { setIsLoading(false); setGames([]); return; }
 
+    const ac = new AbortController();
+    const signal = ac.signal;
+
     (async () => {
       try {
         setIsLoading(true);
         const dateStr = selectedDate.toISOString().slice(0, 10); // YYYY-MM-DD
-        const res = await fetch(`/api/games?date=${dateStr}`, { cache: "no-store" });
+        const res = await fetch(`/api/games?date=${dateStr}`, { cache: "no-store", signal });
         if (!res.ok) {
           const errJson = await res.json().catch(() => ({}));
           throw new Error(errJson?.detail || `HTTP ${res.status}`);
         }
         const data = await res.json();
-        setGames(data.games as Game[]);
+        if (!signal.aborted) setGames(data.games);
       } catch (err: any) {
+        if (signal.aborted) return; // ignore aborted
         console.error("Error fetching games:", err);
         toast({
           title: "Error Fetching Games",
@@ -605,9 +609,11 @@ export function SiggysPicksApp() {
           variant: "destructive",
         });
       } finally {
-        setIsLoading(false);
+        if (!signal.aborted) setIsLoading(false);
       }
     })();
+
+    return () => ac.abort();
   }, [selectedDate, user, authLoading, toast]);
 
   const handleDateSelect = (date: Date | undefined) => {
