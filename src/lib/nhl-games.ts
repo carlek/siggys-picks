@@ -41,7 +41,6 @@ export async function getGames(date: Date): Promise<Game[]> {
   const day = date.getDate().toString().padStart(2, '0');
 
   const url = `http://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard?dates=${year}${month}${day}`;
-  console.log(url);
 
   try {
     const response = await fetch(url, {
