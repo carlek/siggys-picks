@@ -592,7 +592,8 @@ export function SiggysPicksApp() {
     (async () => {
       try {
         setIsLoading(true);
-        const dateStr = selectedDate.toISOString().slice(0, 10); // YYYY-MM-DD
+        const dateStr = selectedDate.toLocaleDateString("en-CA"); // "YYYY-MM-DD" in local time
+
         const res = await fetch(`/api/games?date=${dateStr}`, { cache: "no-store", signal });
         if (!res.ok) {
           const errJson = await res.json().catch(() => ({}));
