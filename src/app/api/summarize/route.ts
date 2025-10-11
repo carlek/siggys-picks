@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   try {
     const recap = await extractRecapFromUrl(url);
     // const summary = await summarizeWithoutAI(recap.text, { maxSentences: 8 });
-    const summarySiggy = await summarizeAsSiggy(recap.text,
+    const recapSiggy = await summarizeAsSiggy(recap.text, "recap",
       {
         maxChars: 12000,
         maxTokens: 1024, 
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
         title: recap.title,
         byline: recap.byline,
         published: recap.published,
-        summary: summarySiggy,
+        summary: recapSiggy,
         url: recap.url,
       }),
       { status: 200, headers: { "content-type": "application/json" } }

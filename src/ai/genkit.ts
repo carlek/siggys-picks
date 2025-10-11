@@ -1,6 +1,6 @@
 import { genkit } from "genkit";
 import { googleAI, gemini20Flash } from "@genkit-ai/googleai";
-import { readSystemPrompt } from "./getSystemPrompt"; 
+import { readSystemPrompt, PromptType } from "./getSystemPrompt"; 
 
 // 1) Genkit client
 export const ai = genkit({
@@ -58,6 +58,7 @@ export type SiggyOptions = {
 
 export async function summarizeAsSiggy(
   text: string,
+  type: PromptType,
   opts: SiggyOptions = {}
 ): Promise<string> {
   const temperature = opts.temperature ?? 0.5;
@@ -67,8 +68,8 @@ export async function summarizeAsSiggy(
   const trimmed = text.length > maxChars ? text.slice(0, maxChars) : text;
   if (!trimmed) return "";
 
-  const system = readSystemPrompt();
-  const prompt = `Rewrite this recap in Siggy's voice using all the rules and direction in the system prompt:\n\n${trimmed}`;
+  const system = readSystemPrompt(type);
+  const prompt = `Rewrite this in Siggy's voice using all the rules and direction in the system prompt:\n\n${trimmed}`;
 
   const result = await ai.generate({
     system: system,

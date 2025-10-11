@@ -46,4 +46,5 @@ apphosting.yaml
 .vscode/
 
 # LLM
-siggy_system.txt
+siggy_recap_prompt.txt
+siggy_preview_prompt.txt

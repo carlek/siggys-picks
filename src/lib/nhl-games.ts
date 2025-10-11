@@ -18,21 +18,23 @@ export interface Game {
   homeTeam: Team;
   awayTeam: Team;
   date: Date;
-  status: 'FINAL' | 'SCHEDULED' | 'LIVE';
+  status: 'FINAL' | 'SCHEDULED' | 'LIVE' | undefined;
   homeScore?: number;
   awayScore?: number;
   gameTime: string;
   recapUrl?: string;
+  previewUrl?: string;
   recapTitle?: string; // optional cache 
   odds: GameOdds | null;
   stats: GameStats | null;
 }
 
-const getGameStatus = (status: any): 'FINAL' | 'SCHEDULED' | 'LIVE' => {
+const getGameStatus = (status: any): 'FINAL' | 'SCHEDULED' | 'LIVE' | undefined => {
   const state = status.type.state;
   if (state === 'post') return 'FINAL';
   if (state === 'in') return 'LIVE';
-  return 'SCHEDULED';
+  if (state === 'pre') return 'SCHEDULED';
+  return undefined;
 };
 
 export async function getGames(date: Date): Promise<Game[]> {
@@ -78,17 +80,51 @@ export async function getGames(date: Date): Promise<Game[]> {
       const awayTeamName = awayCompetitor.team.displayName;
       const easternTimeZone = 'America/New_York';
 
-      // Find the ESPN link if present
-      const recapLink = Array.isArray(event.links)
-        ? event.links.find(
-          (l: any) =>
-            l &&
-            typeof l === "object" &&
-            l.href &&
-            (l.text.toLowerCase() === "recap" || l.shortText.toLowerCase() === "recap")
-          )?.href
-        : undefined;
-      
+      const gameStatus = getGameStatus(event.status);
+
+      let recapUrl: string | undefined;
+      let previewUrl: string | undefined;
+
+      const links: any[] = Array.isArray(event.links) ? event.links : [];
+
+      // Find the canonical game URL among links (if present)
+      const gameHref = links.find(l => typeof l?.href === 'string' && /\/nhl\/game\/_\/gameId\/\d+/.test(l.href))?.href;
+
+      function safeLower(s: unknown): string {
+        return typeof s === 'string' ? s.toLowerCase() : '';
+      }
+
+      function toPreviewUrlFromGame(gameHref: string): string | undefined {
+        try {
+          const url = new URL(gameHref);
+          url.pathname = url.pathname.replace(/\/nhl\/game\/_\/gameId\/(\d+)/, '/nhl/preview/_/gameId/$1');
+          return url.toString();
+        } catch {
+          return undefined;
+        }
+      }
+
+      if (gameStatus === 'FINAL') {
+        // Prefer explicit Recap link if ESPN provides one
+        recapUrl = links.find(l => {
+          const t = safeLower(l?.text);
+          const st = safeLower(l?.shortText);
+          return t === 'recap' || st === 'recap';
+        })?.href;
+
+        // Fallback: construct from id if no explicit link found
+        if (!recapUrl && event?.id) {
+          recapUrl = `https://www.espn.com/nhl/recap/_/gameId/${event.id}`;
+        }
+      }
+
+      if (gameStatus === 'SCHEDULED') {
+        // Best effort: if we have a game link, transform it; else construct from id
+        previewUrl = gameHref
+          ? toPreviewUrlFromGame(gameHref)
+          : (event?.id ? `https://www.espn.com/nhl/preview/_/gameId/${event.id}` : undefined);
+      }
+
       const tupleOddsStats = bothMap[String(event.id)] ?? { odds: null, stats: null };
 
       return {
@@ -106,11 +142,12 @@ export async function getGames(date: Date): Promise<Game[]> {
           logoColor: teamColors[awayTeamName] || '#CCCCCC',
         },
         date: new Date(event.date),
-        status: getGameStatus(event.status),
+        status: gameStatus,
         homeScore: parseInt(homeCompetitor.score, 10),
         awayScore: parseInt(awayCompetitor.score, 10),
         gameTime: formatInTimeZone(new Date(event.date), easternTimeZone, 'h:mm a'),
-        recapUrl: recapLink,
+        recapUrl: recapUrl,
+        previewUrl: previewUrl,
         odds: tupleOddsStats.odds,
         stats: tupleOddsStats.stats
         ,
