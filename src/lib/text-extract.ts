@@ -1,8 +1,7 @@
-// src/lib/recap-extract.ts
 import { load } from "cheerio";
 import { decode } from "he";
 
-export type RecapExtract = {
+export type TextExtract = {
   url: string;
   title: string;
   byline?: string;
@@ -11,16 +10,16 @@ export type RecapExtract = {
   text: string;
 };
 
-export async function extractRecapFromUrl(url: string): Promise<RecapExtract> {
+export async function extractTextFromUrl(url: string): Promise<TextExtract> {
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) {
     throw new Error(`Upstream ${res.status}`);
   }
   const html = await res.text();
-  return extractRecapFromHtml(html, url);
+  return extractTextFromHtml(html, url);
 }
 
-export function extractRecapFromHtml(html: string, url: string): RecapExtract {
+export function extractTextFromHtml(html: string, url: string): TextExtract {
   const $ = load(html);
 
   const clean = (s: string) => decode((s || "").replace(/\s+/g, " ").trim());

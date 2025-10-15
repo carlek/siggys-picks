@@ -1,20 +1,22 @@
 import type { NextRequest } from "next/server";
-import { extractRecapFromUrl } from "@/lib/recap-extract";
+import { extractTextFromUrl } from "@/lib/text-extract";
 import { summarizeWithoutAI, summarizeAsSiggy } from "@/ai/genkit";
 
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
-  const url = req.nextUrl.searchParams.get("url");
+  const url = req.nextUrl.searchParams.get('url');
+  const kindParam = req.nextUrl.searchParams.get('kind');
+  const kind = kindParam === 'preview' ? 'preview' : 'recap'; // default to recap
 
   if (!url) {
     return new Response(JSON.stringify({ error: "Missing url" }), { status: 400 });
   }
 
   try {
-    const recap = await extractRecapFromUrl(url);
-    // const summary = await summarizeWithoutAI(recap.text, { maxSentences: 8 });
-    const recapSiggy = await summarizeAsSiggy(recap.text, "recap",
+    const article = await extractTextFromUrl(url);
+    // const summary = await summarizeWithoutAI(article.text, { maxSentences: 8 });
+    const summarySiggy = await summarizeAsSiggy(article.text, kind,
       {
         maxChars: 12000,
         maxTokens: 1024, 
@@ -22,11 +24,11 @@ export async function GET(req: NextRequest) {
 
     return new Response(
       JSON.stringify({
-        title: recap.title,
-        byline: recap.byline,
-        published: recap.published,
-        summary: recapSiggy,
-        url: recap.url,
+        title: article.title,
+        byline: article.byline,
+        published: article.published,
+        summary: summarySiggy,
+        url: article.url,
       }),
       { status: 200, headers: { "content-type": "application/json" } }
     );

@@ -24,15 +24,16 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils"
 import { ChevronDown } from "lucide-react";
 import { firebaseConfig } from "@/app/firebase";
+import { getAxisMapByAxes } from "recharts/types/chart/generateCategoricalChart"
 
 
 function GameCard({ game }: { game: Game }) {
   const { user, loading: authLoading } = useAuth();
 
   const [flipped, setFlipped] = React.useState(false)
-  const [recapTitle, setRecapTitle] = React.useState<string | null>(null)
-  const [recapLoading, setRecapLoading] = React.useState(false)
-  const noRecapCopy = "😿 Sorry, this game summary is lost under a couch. -Siggy- 🐈‍⬛";
+  const [textTitle, setTextTitle] = React.useState<string | null>(null)
+  const [textLoading, setTextLoading] = React.useState(false)
+  const noTextCopy = "😿 Sorry, this games details are lost under a couch. -Siggy- 🐈‍⬛";
 
   // Stats dialog
   const [statsOpen, setStatsOpen] = React.useState(false)
@@ -67,29 +68,36 @@ function GameCard({ game }: { game: Game }) {
     </div>
   )
 
+  function getArticleUrl(game: Game): string | null {
+    if (game.status === 'FINAL' && game.recapUrl) return game.recapUrl;
+    if (game.status === 'SCHEDULED' && game.previewUrl) return game.previewUrl;
+    return null;
+  }
+  
   // Pull headline via lightweight title route for FINAL games
   React.useEffect(() => {
     let abort = false
+
     async function loadTitle() {
-      if (game.status !== "FINAL" || !game.recapUrl) {
-        setRecapTitle(null)
-        return
-      }
+      const url = getArticleUrl(game);
+      if (!url) { setTextTitle(null); return; }
+
       try {
-        setRecapLoading(true)
-        const res = await fetch(`/api/recap?url=${encodeURIComponent(game.recapUrl)}`, { cache: "no-store" })
-        if (!res.ok) throw new Error(`recap ${res.status}`)
-        const data = await res.json()
-        if (!abort) setRecapTitle(typeof data?.title === "string" ? data.title : null)
+        setTextLoading(true);
+        const res = await fetch(`/api/extract?url=${encodeURIComponent(url)}`, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`${game.status?.toLowerCase()} ${res.status}`);
+        const data = await res.json();
+        if (!abort) setTextTitle(typeof data?.title === 'string' ? data.title : null);
       } catch {
-        if (!abort) setRecapTitle(null)
+        if (!abort) setTextTitle(null);
       } finally {
-        if (!abort) setRecapLoading(false)
+        if (!abort) setTextLoading(false);
       }
     }
+
     loadTitle()
     return () => { abort = true }
-  }, [game.status, game.recapUrl])
+  }, [game.status, game.recapUrl, game.previewUrl])
 
   // Write with typewriter effect
   React.useEffect(() => {
@@ -155,8 +163,8 @@ function GameCard({ game }: { game: Game }) {
     const home = game.homeTeam.name
     const away = game.awayTeam.name
     if (game.status === "FINAL") {
-      if (recapTitle && recapTitle.trim().length > 0)
-        return recapTitle
+      if (textTitle && textTitle.trim().length > 0)
+        return textTitle
       // Fall back
       const homeWon = (game.homeScore ?? 0) >= (game.awayScore ?? 0)
       const winner = homeWon ? home : away
@@ -169,7 +177,7 @@ function GameCard({ game }: { game: Game }) {
       return `${home} are hosting ${away} at ${game.gameTime} ET`
     }
     return `${away} vs ${home}`
-  }, [game, recapTitle])
+  }, [game, textTitle])
 
   const toggle = () => setFlipped(v => !v)
   const onKey = (e: React.KeyboardEvent) => {
@@ -177,6 +185,14 @@ function GameCard({ game }: { game: Game }) {
       e.preventDefault()
       toggle()
     }
+  }
+
+  type SummaryKind = 'recap' | 'preview';
+
+  function getArticleUrlAndKind(game: Game): { url: string; kind: SummaryKind } | null {
+    if (game.status === 'FINAL' && game.recapUrl) return { url: game.recapUrl, kind: 'recap' };
+    if (game.status === 'SCHEDULED' && game.previewUrl) return { url: game.previewUrl, kind: 'preview' };
+    return null;
   }
 
   // Fetch summary on demand
@@ -187,14 +203,14 @@ function GameCard({ game }: { game: Game }) {
       // Open the panel immediately so the loading message can render
       setSummaryOpen(true)
 
-      if (game.status === "FINAL" && game.recapUrl && !summaryText && !summaryLoading) {
+      if (!summaryText && !summaryLoading) {
+        const pair = getArticleUrlAndKind(game);
+        if (!pair) return;
         try {
           setSummaryError(null)
           setSummaryLoading(true)
-
-          const query = new URLSearchParams({ url: game.recapUrl })
+          const query = new URLSearchParams({ url: pair.url, kind: pair.kind });
           const r = await fetch(`/api/summarize?${query.toString()}`, { cache: "no-store" })
-
           if (!r.ok) throw new Error(`summarize ${r.status}`)
           const data = await r.json()
           setSummaryText(typeof data?.summary === "string" ? data.summary : null)
@@ -353,12 +369,12 @@ function GameCard({ game }: { game: Game }) {
                 {/* Title / headline shown only when summary is closed */}
                 {!summaryOpen && (
                   <div className="text-xl font-headline font-semibold leading-snug px-2 w-full text-center">
-                    {recapLoading ? "Loading recap..." : backText}
+                    {textLoading ? "Loading recap..." : backText}
                   </div>
                 )}
 
-                {/* Animated, scrollable summary */}
-                {game.status === "FINAL" && (
+                {/* Animated, scrollable summary for preview or recap */}
+                {getArticleUrl(game) && (
                   <div
                     id="recap-summary"
                     className={cn(
@@ -394,37 +410,30 @@ function GameCard({ game }: { game: Game }) {
                   </div>
                 )}
 
-                {game.status === "FINAL" && (
-                  <div className="mt-3 w-full flex justify-center">
-                    {game.recapUrl ? (
-                      <button
-                        className="flex items-center justify-center text-xs px-3 py-1 rounded-full border bg-background hover:bg-accent transition-colors"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onToggleSummary(e)
-                        }}
-                        aria-expanded={summaryOpen}
-                        aria-controls="recap-summary"
-                        disabled={summaryLoading}
-                      >
-                        {summaryLoading ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <ChevronDown
-                            className={cn(
-                              "h-4 w-4 transition-transform duration-300",
-                              summaryOpen && "rotate-180"
-                            )}
-                          />
-                        )}
-                      </button>
-                    ) : (
-                      <div className="text-xs font-semibold text-muted-foreground text-center px-3">
-                        {noRecapCopy}
-                      </div>
-                    )}
-                  </div>
-                )}
+                {/* Toggle button or fallback copy */}
+                <div className="mt-3 w-full flex justify-center">
+                  {getArticleUrl(game) ? (
+                    <button
+                      className="flex items-center justify-center text-xs px-3 py-1 rounded-full border bg-background hover:bg-accent transition-colors"
+                      onClick={(e) => { e.stopPropagation(); onToggleSummary(e); }}
+                      aria-expanded={summaryOpen}
+                      aria-controls="article-summary"
+                      disabled={summaryLoading}
+                    >
+                      {summaryLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <ChevronDown
+                          className={cn('h-4 w-4 transition-transform duration-300', summaryOpen && 'rotate-180')}
+                        />
+                      )}
+                    </button>
+                  ) : (
+                    <div className="text-xs font-semibold text-muted-foreground text-center px-3">
+                      {noTextCopy}
+                    </div>
+                  )}
+                </div>
 
               </div>
             </div>
@@ -593,7 +602,6 @@ export function SiggysPicksApp() {
       try {
         setIsLoading(true);
         const dateStr = selectedDate.toLocaleDateString("en-CA"); // "YYYY-MM-DD" in local time
-
         const res = await fetch(`/api/games?date=${dateStr}`, { cache: "no-store", signal });
         if (!res.ok) {
           const errJson = await res.json().catch(() => ({}));
