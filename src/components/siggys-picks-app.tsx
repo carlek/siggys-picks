@@ -33,7 +33,7 @@ function GameCard({ game }: { game: Game }) {
   const [flipped, setFlipped] = React.useState(false)
   const [textTitle, setTextTitle] = React.useState<string | null>(null)
   const [textLoading, setTextLoading] = React.useState(false)
-  const noTextCopy = "😿 Sorry, this games details are lost under a couch. -Siggy- 🐈‍⬛";
+  const noTextCopy = "😿 Sorry, game details are lost under a couch. -Siggy- 🐈‍⬛";
 
   // Stats dialog
   const [statsOpen, setStatsOpen] = React.useState(false)
@@ -74,7 +74,7 @@ function GameCard({ game }: { game: Game }) {
     return null;
   }
   
-  // Pull headline via lightweight title route for FINAL games
+  // Pull headline via url for final and scheduled games
   React.useEffect(() => {
     let abort = false
 
@@ -173,10 +173,15 @@ function GameCard({ game }: { game: Game }) {
       const y = homeWon ? (game.awayScore ?? 0) : (game.homeScore ?? 0)
       return `${winner} beat ${loser} with a score of ${x}-${y}`
     }
+
     if (game.status === "SCHEDULED") {
+      if (textTitle && textTitle.trim().length > 0 &&
+          !/pregame/i.test(textTitle))
+        return `${textTitle}`
       return `${home} are hosting ${away} at ${game.gameTime} ET`
     }
     return `${away} vs ${home}`
+
   }, [game, textTitle])
 
   const toggle = () => setFlipped(v => !v)
@@ -200,6 +205,14 @@ function GameCard({ game }: { game: Game }) {
     e.stopPropagation()
 
     if (!summaryOpen) {
+      // A pregame title has no content, just rely on noTextCopy
+      if (isPregameTitle) {
+        setSummaryOpen(false);
+        setSummaryText(null);
+        setSummaryError(null);
+        return;
+      }
+
       // Open the panel immediately so the loading message can render
       setSummaryOpen(true)
 
@@ -289,6 +302,11 @@ function GameCard({ game }: { game: Game }) {
     "data-[state=active]:bg-background data-[state=active]:text-foreground " +
     "data-[state=inactive]:text-muted-foreground hover:text-bold";
 
+  const isPregameTitle = React.useMemo(
+    () => /pregame/i.test(textTitle ?? ""),
+    [textTitle]
+  );
+
   return (
     <Card
       className="hover:shadow-lg hover:border-accent transition-all duration-300"
@@ -369,12 +387,12 @@ function GameCard({ game }: { game: Game }) {
                 {/* Title / headline shown only when summary is closed */}
                 {!summaryOpen && (
                   <div className="text-xl font-headline font-semibold leading-snug px-2 w-full text-center">
-                    {textLoading ? "Loading recap..." : backText}
+                    {textLoading ? "Loading ..." : backText}
                   </div>
                 )}
 
                 {/* Animated, scrollable summary for preview or recap */}
-                {getArticleUrl(game) && (
+                {getArticleUrl(game) && !isPregameTitle && (
                   <div
                     id="recap-summary"
                     className={cn(
@@ -412,7 +430,11 @@ function GameCard({ game }: { game: Game }) {
 
                 {/* Toggle button or fallback copy */}
                 <div className="mt-3 w-full flex justify-center">
-                  {getArticleUrl(game) ? (
+                  {isPregameTitle ? (
+                    <div className="text-xs font-semibold text-muted-foreground text-center px-3">
+                      {noTextCopy}
+                    </div>
+                  ) :getArticleUrl(game) ? (
                     <button
                       className="flex items-center justify-center text-xs px-3 py-1 rounded-full border bg-background hover:bg-accent transition-colors"
                       onClick={(e) => { e.stopPropagation(); onToggleSummary(e); }}

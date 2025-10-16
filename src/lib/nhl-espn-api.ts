@@ -54,7 +54,7 @@ export async function statsFromSummary(summary: any): Promise<GameStats | null> 
   return { away: awayStats, home: homeStats };
 }
 
-// Convenience: get BOTH from one summary fetch
+// Convenience: get from one summary fetch
 export async function getOddsAndStats(eventId: string | number): Promise<{
   odds: GameOdds | null;
   stats: GameStats | null;
