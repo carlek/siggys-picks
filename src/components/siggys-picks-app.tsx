@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils"
 import { ChevronDown } from "lucide-react";
 import { firebaseConfig } from "@/app/firebase";
 import { getAxisMapByAxes } from "recharts/types/chart/generateCategoricalChart"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 
 function GameCard({ game }: { game: Game }) {
@@ -725,7 +726,8 @@ export function SiggysPicksApp() {
               </Popover>
             </div>
 
-            <div className="shrink-0">
+            <div className="flex items-center gap-2 shrink-0">
+              <ThemeToggle />
               <AuthStrip />
             </div>
           </div>
