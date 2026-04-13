@@ -9,7 +9,8 @@
         "**/node_modules/**"
       ],
       "frameworksBackend": {
-        "region": "us-east1"
+        "region": "us-east1",
+        "memory": "512MiB"
       }
      },
     {
@@ -21,7 +22,9 @@
         "**/node_modules/**"
       ],
       "frameworksBackend": {
-        "region": "us-east1"
+        "region": "us-east1",
+        "memory": "512MiB",
+        "secrets": ["SIGGY_PREVIEW_PROMPT", "SIGGY_RECAP_PROMPT"]
       }
     }
   ],

@@ -7,11 +7,6 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [{ protocol: 'https', hostname: 'placehold.co', port: '', pathname: '/**' }],
   },
-  outputFileTracingIncludes: {
-    // include both keys to be safe with and without src
-    'src/app/api/summarize/route': ['./src/ai/prompts/siggy_system.txt'],
-    'app/api/summarize/route': ['./src/ai/prompts/siggy_system.txt'],
-  },
 };
 
 export default nextConfig;

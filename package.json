@@ -60,6 +60,9 @@
     "tailwindcss-animate": "^1.0.7",
     "zod": "^3.24.2"
   },
+  "engines": {
+    "node": "20"
+  },
   "devDependencies": {
     "@types/cheerio": "^0.22.35",
     "@types/he": "^1.2.3",

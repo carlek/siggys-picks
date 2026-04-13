@@ -40,11 +40,13 @@ next-env.d.ts
 
 # studio
 .firebase/
-apphosting.yaml
 
 # VS Code
 .vscode/
 
-# LLM
-siggy_recap_prompt.txt
-siggy_preview_prompt.txt
+# Claude
+.claude
+
+# LLM prompt files (real prompts, not examples)
+src/ai/prompts/siggy_recap_prompt.txt
+src/ai/prompts/siggy_preview_prompt.txt

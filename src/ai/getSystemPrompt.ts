@@ -2,47 +2,28 @@ import 'server-only';
 import fs from 'fs';
 import path from 'path';
 
-// Base relative directory where prompt text files live
-const BASE_RELATIVE = path.join('src', 'ai', 'prompts');
-
-const PROMPT_FILES = {
-  recap: 'siggy_recap_prompt.txt',
-  preview: 'siggy_preview_prompt.txt',
+const PROMPTS = {
+  recap: { env: 'SIGGY_RECAP_PROMPT', file: 'siggy_recap_prompt.txt' },
+  preview: { env: 'SIGGY_PREVIEW_PROMPT', file: 'siggy_preview_prompt.txt' },
 } as const;
 
-export type PromptType = keyof typeof PROMPT_FILES;
+export type PromptType = keyof typeof PROMPTS;
 
-/**
- * Reads the appropriate Siggy system prompt file from known build locations.
- * @param type 'recap' | 'preview'
- */
 export function readSystemPrompt(type: PromptType): string {
-  const fileName = PROMPT_FILES[type];
-  const relative = path.join(BASE_RELATIVE, fileName);
+  const { env, file } = PROMPTS[type];
 
-  // Candidate search paths depending on environment
-  const candidates = [
-    // dev: next dev
-    path.join(process.cwd(), relative),
+  // Production: read from Google Secret Manager via env var
+  if (process.env[env]) {
+    return process.env[env]!;
+  }
 
-    // prod: next default server output
-    path.join(process.cwd(), '.next', 'server', relative),
-
-    // prod: standalone bundle 
-    path.join(process.cwd(), '.next', 'standalone', relative),
-
-    // firebase runtime explicit fallbacks
-    path.join('/workspace', '.next', 'standalone', relative),
-    path.join('/workspace', '.next', 'server', relative),
-  ];
-
-  for (const p of candidates) {
-    if (fs.existsSync(p)) {
-      return fs.readFileSync(p, 'utf-8');
-    }
+  // Local dev: read from file
+  const filePath = path.join(process.cwd(), 'src', 'ai', 'prompts', file);
+  if (fs.existsSync(filePath)) {
+    return fs.readFileSync(filePath, 'utf-8');
   }
 
   throw new Error(
-    `System prompt for "${type}" not found. Checked:\n` + candidates.join('\n')
+    `Prompt "${type}" not found. Set ${env} env var or provide ${filePath}`
   );
 }
