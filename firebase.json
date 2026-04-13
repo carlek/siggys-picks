@@ -10,7 +10,8 @@
       ],
       "frameworksBackend": {
         "region": "us-east1",
-        "memory": "512MiB"
+        "memory": "512MiB",
+        "secrets": ["SIGGY_PREVIEW_PROMPT", "SIGGY_RECAP_PROMPT"]
       }
      },
     {
