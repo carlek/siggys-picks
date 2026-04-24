@@ -225,9 +225,17 @@ function GameCard({ game }: { game: Game }) {
           setSummaryLoading(true)
           const query = new URLSearchParams({ url: pair.url, kind: pair.kind });
           const r = await fetch(`/api/summarize?${query.toString()}`, { cache: "no-store" })
-          if (!r.ok) throw new Error(`summarize ${r.status}`)
+          if (!r.ok) {
+            if (r.status === 429 && r.statusText === "Too Many Requests") {
+              throw new Error("Siggy has run out of catnip and lost access!")
+            }
+            throw new Error(`summarize ${r.status}`)
+          }
           const data = await r.json()
           setSummaryText(typeof data?.summary === "string" ? data.summary : null)
+          if (data?.siggyUnavailable) {
+            setSummaryError("Siggy has run out of catnip and lost access!")
+          }
         } catch (err: any) {
           setSummaryError(err?.message || "Failed to load summary")
         } finally {
@@ -416,9 +424,16 @@ function GameCard({ game }: { game: Game }) {
                             "\"Hang on, I'm digging up that game.\" -Siggy- 🐈‍⬛"
                           ) : (
                             <>
-                              {typing ? typed : (summaryText ?? "")}
-                              {typing && (
-                                <span className="ml-1 inline-block w-[2px] h-4 align-baseline bg-foreground animate-pulse" />
+                              {summaryError && (
+                                <div className="mb-2 italic">{summaryError}</div>
+                              )}
+                              {summaryText && (
+                                <>
+                                  {typing ? typed : summaryText}
+                                  {typing && (
+                                    <span className="ml-1 inline-block w-[2px] h-4 align-baseline bg-foreground animate-pulse" />
+                                  )}
+                                </>
                               )}
                             </>
                           )}

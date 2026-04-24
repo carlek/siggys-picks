@@ -15,20 +15,33 @@ export async function GET(req: NextRequest) {
 
   try {
     const article = await extractTextFromUrl(url);
-    // const summary = await summarizeWithoutAI(article.text, { maxSentences: 8 });
-    const summarySiggy = await summarizeAsSiggy(article.text, kind,
-      {
+
+    let summary: string;
+    let siggyUnavailable = false;
+    try {
+      summary = await summarizeAsSiggy(article.text, kind, {
         maxChars: 12000,
-        maxTokens: 1024, 
+        maxTokens: 1024,
       });
+    } catch (aiErr: any) {
+      const aiMessage = aiErr?.message || "";
+      const aiStatus = aiErr?.status ?? aiErr?.statusCode;
+      const isRateLimited =
+        aiStatus === 429 || /\b429\b|too many requests|rate.?limit|quota/i.test(aiMessage);
+      if (!isRateLimited) throw aiErr;
+
+      summary = await summarizeWithoutAI(article.text, { maxSentences: 8 });
+      siggyUnavailable = true;
+    }
 
     return new Response(
       JSON.stringify({
         title: article.title,
         byline: article.byline,
         published: article.published,
-        summary: summarySiggy,
+        summary,
         url: article.url,
+        siggyUnavailable,
       }),
       { status: 200, headers: { "content-type": "application/json" } }
     );
