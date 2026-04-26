@@ -1,4 +1,3 @@
-import { load } from "cheerio";
 import { decode } from "he";
 
 export type TextExtract = {
@@ -10,73 +9,61 @@ export type TextExtract = {
   text: string;
 };
 
-export async function extractTextFromUrl(url: string): Promise<TextExtract> {
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) {
-    throw new Error(`Upstream ${res.status}`);
+const SUMMARY_API =
+  "https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/summary";
+
+function parseGameId(url: string): string | null {
+  try {
+    const u = new URL(url);
+    const id = u.searchParams.get("gameId") || u.searchParams.get("eventId");
+    if (id) return id;
+    const m = u.pathname.match(/\/(\d{6,})(?:[\/?#]|$)/);
+    return m ? m[1] : null;
+  } catch {
+    return null;
   }
-  const html = await res.text();
-  return extractTextFromHtml(html, url);
 }
 
-export function extractTextFromHtml(html: string, url: string): TextExtract {
-  const $ = load(html);
+function storyToParagraphs(story: string): string[] {
+  return story
+    .replace(/<\s*br\s*\/?>/gi, "\n")
+    .split(/<\/(?:p|div|h\d|li)>/i)
+    .map((b) => decode(b.replace(/<[^>]+>/g, "")).replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+}
 
-  const clean = (s: string) => decode((s || "").replace(/\s+/g, " ").trim());
+export async function extractTextFromUrl(url: string): Promise<TextExtract> {
+  const gameId = parseGameId(url);
+  if (!gameId) {
+    throw new Error(`Could not parse gameId from URL: ${url}`);
+  }
 
-  // Title: ESPN often uses h1.Story__Headline.h1; fall back to og:title or <title>
-  const h1 = $("h1.Story__Headline.h1").first().text();
-  const ogTitle = $('meta[property="og:title"]').attr("content") || "";
-  const docTitle = $("title").first().text() || "";
-  const title = clean(h1 || ogTitle || docTitle);
+  const apiUrl = `${SUMMARY_API}?event=${encodeURIComponent(gameId)}`;
+  const res = await fetch(apiUrl, { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(`extractTextFromUrl: ${res.status}`);
+  }
+  const data: any = await res.json();
 
-  // Byline and published time - best effort
-  const byline =
-    clean($("[class*='Byline'], .Author").first().text()) ||
-    clean($("span[rel='author']").first().text()) ||
-    undefined;
+  const article = data?.article ?? {};
+  const story: string = article.story ?? "";
+  const paragraphs = storyToParagraphs(story);
 
-  const published =
-    $("meta[property='article:published_time']").attr("content") ||
-    $("time[datetime]").attr("datetime") ||
-    undefined;
+  const title: string =
+    article.headline ||
+    article.shortHeadline ||
+    data?.header?.competitions?.[0]?.note ||
+    "";
 
-  // Try a few likely article containers to be resilient to markup changes
-  const paragraphs = extractParagraphs($, clean);
+  const byline: string | undefined = article.byline || undefined;
+  const published: string | undefined = article.published || undefined;
 
   return {
-    url,
-    title,
-    byline,
+    url: apiUrl,
+    title: decode(title),
+    byline: byline ? decode(byline) : undefined,
     published,
     paragraphs,
     text: paragraphs.join("\n\n"),
   };
-}
-
-function extractParagraphs($: ReturnType<typeof load>, clean: (s: string) => string): string[] {
-  const containers = [
-    ".Story__Body",
-    ".article-body",
-    ".Article__Content",
-    ".Article__Body",
-    "article",
-    "main",
-  ];
-
-  for (const sel of containers) {
-    const ps = $(sel).find("p");
-    const list = ps
-      .toArray()
-      .map((p: any) => clean($(p).text()))
-      .filter((t: string | any[]) => t.length > 0);
-    if (list.length > 0) return list;
-  }
-
-  // Fallback: take first 20 paragraphs found anywhere
-  return $("p")
-    .toArray()
-    .map((p: any) => clean($(p).text()))
-    .filter(Boolean)
-    .slice(0, 20);
 }
