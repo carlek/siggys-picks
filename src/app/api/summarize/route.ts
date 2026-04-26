@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { extractTextFromUrl } from "@/lib/text-extract";
 import { summarizeWithoutAI, summarizeAsSiggy } from "@/ai/genkit";
 
+export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
@@ -15,6 +16,20 @@ export async function GET(req: NextRequest) {
 
   try {
     const article = await extractTextFromUrl(url);
+
+    if (article.text === '') {
+      return new Response(
+        JSON.stringify({
+          title: article.title,
+          byline: article.byline,
+          published: article.published,
+          summary: "🐈‍⬛ Siggy's working on a preview/recap, come back later...",
+          url: article.url,
+          siggyUnavailable: false,
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      );
+    }
 
     let summary: string;
     let siggyUnavailable = false;

@@ -10,6 +10,7 @@ Stay tuned for game previews, and more wisdom and fun from Siggy the Sigster.
  
 ![Demo](./siggys-picks.webp)
 
+---
 
 <summary><strong>Siggys Pick Configuration Guide</strong></summary>
 
@@ -161,3 +162,25 @@ _=> pick + confidence._
   { "statWeights": { "gf": 0.33, "ga": 0.27, "pp": 0.24, "pk": 0.16 } }
   ```
 </details>
+
+---
+### Firebase deploy commands
+
+```bash
+# there are two backends. Commands are shown for 1: 
+# 1: ssrsiggyspicks 
+# 2: ssrsiggyspicksstaging 
+
+# deploy:
+firebase deploy --only hosting:siggys-picks-staging \
+  --project=siggys-picks
+
+# destroy:
+gcloud run services delete ssrsiggyspicksstaging \
+  --project=siggys-picks --region=us-east1
+
+# after new creation one must restore/add run permissions
+gcloud run services add-iam-policy-binding ssrsiggyspicksstaging \
+  --project=siggys-picks --region=us-east1 \
+  --member="allUsers" --role="roles/run.invoker"
+```

@@ -34,7 +34,7 @@ function GameCard({ game }: { game: Game }) {
   const [flipped, setFlipped] = React.useState(false)
   const [textTitle, setTextTitle] = React.useState<string | null>(null)
   const [textLoading, setTextLoading] = React.useState(false)
-  const noTextCopy = "😿 Sorry, game details are lost under a couch. -Siggy- 🐈‍⬛";
+  const noTextCopy = "😿 Sorry, I can't comment on live games, or if they're lost under a couch. -Siggy- 🐈‍⬛";
 
   // Stats dialog
   const [statsOpen, setStatsOpen] = React.useState(false)
