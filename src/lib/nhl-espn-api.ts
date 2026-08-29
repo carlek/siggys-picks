@@ -1,12 +1,13 @@
 import { GameOdds, parseEspnOdds } from "./nhl-odds";
 import { GameStats, fetchTeamStatsByTeam } from "./nhl-stats";
+import { espnFetch } from "./espn-fetch";
 
 
 // Single fetch of ESPN summary (shared)
 export async function fetchEspnSummary(eventId: string | number): Promise<any | null> {
   const url = `https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/summary?event=${eventId}`;
   try {
-    const res = await fetch(url, { next: { revalidate: 60 } });
+    const res = await espnFetch(url, { next: { revalidate: 60 } });
     if (!res.ok) throw new Error(`ESPN summary HTTP ${res.status}`);
     return await res.json();
   } catch (err) {

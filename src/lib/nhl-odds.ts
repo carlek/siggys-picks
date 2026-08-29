@@ -1,5 +1,7 @@
 'use server';
 
+import { espnFetch } from './espn-fetch';
+
 export interface TeamOdds {
   moneyline: number | null;     // American odds, e.g. -120, +150
   pointSpread: number | null;
@@ -61,7 +63,7 @@ export async function parseEspnOdds(json: any):  Promise<GameOdds | null> {
 export async function getOdds(eventId: string | number): Promise<GameOdds | null> {
   const url = `https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/summary?event=${eventId}`;
   try {
-    const res = await fetch(url, { next: { revalidate: 60 } }); // cache for 60s on Next.js
+    const res = await espnFetch(url, { next: { revalidate: 60 } }); // cache for 60s on Next.js
     if (!res.ok) throw new Error(`ESPN odds HTTP ${res.status}`);
     const json = await res.json();
     return parseEspnOdds(json);
