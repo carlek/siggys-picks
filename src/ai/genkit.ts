@@ -1,11 +1,15 @@
 import { genkit } from "genkit";
-import { googleAI, gemini20Flash } from "@genkit-ai/googleai";
-import { readSystemPrompt, PromptType } from "./getSystemPrompt"; 
+import { googleAI } from "@genkit-ai/google-genai";
+import { readSystemPrompt, PromptType } from "./getSystemPrompt";
 
 // 1) Genkit client
+// gemini-2.0-flash was retired by Google; gemini-flash-lite-latest is the closest
+// replacement (fast, no hidden "thinking" token overhead). Using the "-latest" alias
+// instead of a pinned snapshot avoids this same breakage next time Google sunsets a
+// specific model version.
 export const ai = genkit({
   plugins: [googleAI()],
-  model: gemini20Flash,
+  model: googleAI.model("gemini-flash-lite-latest"),
 });
 
 // 2) Types for the summary helper
