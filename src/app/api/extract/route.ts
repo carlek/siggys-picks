@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server"
 import { decode } from "he"
+import { espnFetch } from "@/lib/espn-fetch"
 
 // Extract the H1 and decode entities like &ldquo; &rsquo; etc.
 function extractTitle(html: string): string | null {
@@ -20,7 +21,7 @@ export async function GET(req: NextRequest) {
   }
   try {
     // Server-side fetch avoids CORS
-    const res = await fetch(url, { cache: "no-store" })
+    const res = await espnFetch(url, { cache: "no-store" })
     if (!res.ok) {
       return new Response(JSON.stringify({ error: `Upstream ${res.status}` }), { status: 502 })
     }

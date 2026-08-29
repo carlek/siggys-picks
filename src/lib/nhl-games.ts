@@ -5,6 +5,7 @@ import { getTeamCity, getTeamName, teamColors } from './nhl-teams';
 import { GameOdds } from './nhl-odds';
 import { GameStats } from './nhl-stats'
 import { getOddsAndStatsForEvents } from './nhl-espn-api';
+import { espnFetch } from './espn-fetch';
 
 export interface Team {
   id: number;
@@ -45,10 +46,8 @@ export async function getGames(date: Date): Promise<Game[]> {
   const url = `http://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard?dates=${year}${month}${day}`;
 
   try {
-    const response = await fetch(url, {
+    const response = await espnFetch(url, {
       method: 'GET',
-      headers: {
-      },
       cache: 'no-store',
     });
 

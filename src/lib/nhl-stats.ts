@@ -2,6 +2,7 @@
 
 import { load } from 'cheerio';
 import he from 'he';
+import { espnFetch } from './espn-fetch';
 
 export interface TeamStats {
   goalsForPerGame: number | null;
@@ -66,7 +67,7 @@ export async function fetchTeamStatsByTeam(teamAbbr: string): Promise<TeamStats>
   if (!url) return { ...DEFAULT_STATS };
 
   try {
-    const res = await fetch(url, { cache: 'no-store' });
+    const res = await espnFetch(url, { cache: 'no-store' });
     if (!res.ok) throw new Error(`Team page HTTP ${res.status}`);
     const html = await res.text();
     return extractTeamStatsCard(html);
@@ -81,7 +82,7 @@ export async function getStats(eventId: string | number): Promise<GameStats | nu
   try {
     // low to discover team pages
     const sumUrl = `https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/summary?event=${eventId}`;
-    const res = await fetch(sumUrl, { next: { revalidate: 60 } });
+    const res = await espnFetch(sumUrl, { next: { revalidate: 60 } });
     if (!res.ok) throw new Error(`ESPN summary HTTP ${res.status}`);
     const json = await res.json();
 

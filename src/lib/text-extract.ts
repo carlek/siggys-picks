@@ -1,4 +1,5 @@
 import { decode } from "he";
+import { espnFetch } from "./espn-fetch";
 
 export type TextExtract = {
   url: string;
@@ -39,7 +40,7 @@ export async function extractTextFromUrl(url: string): Promise<TextExtract> {
   }
 
   const apiUrl = `${SUMMARY_API}?event=${encodeURIComponent(gameId)}`;
-  const res = await fetch(apiUrl, { cache: "no-store" });
+  const res = await espnFetch(apiUrl, { cache: "no-store" });
   if (!res.ok) {
     throw new Error(`extractTextFromUrl: ${res.status}`);
   }
