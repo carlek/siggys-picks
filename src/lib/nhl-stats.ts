@@ -81,7 +81,8 @@ export async function fetchTeamStatsByTeam(teamAbbr: string): Promise<TeamStats>
 export async function getStats(eventId: string | number): Promise<GameStats | null> {
   try {
     // low to discover team pages
-    const sumUrl = `https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/summary?event=${eventId}`;
+    // http:// (not https://) is required for Cloud Run egress — see text-extract.ts.
+    const sumUrl = `http://site.api.espn.com/apis/site/v2/sports/hockey/nhl/summary?event=${eventId}`;
     const res = await espnFetch(sumUrl, { next: { revalidate: 60 } });
     if (!res.ok) throw new Error(`ESPN summary HTTP ${res.status}`);
     const json = await res.json();

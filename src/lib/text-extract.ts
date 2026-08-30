@@ -10,8 +10,14 @@ export type TextExtract = {
   text: string;
 };
 
+// Plain http:// is deliberate. site.api.espn.com sits behind an Akamai bot rule that
+// 403s Google Cloud egress on the TLS listener only — the identical host+path over
+// http:// returns 200 from Cloud Run (verified: same headline, same story length, no
+// redirect). The scoreboard call in nhl-games.ts has always used http:// and is the
+// only ESPN API call that never broke in prod. These are public, unauthenticated,
+// read-only endpoints carrying no credentials, so plaintext costs us little here.
 const SUMMARY_API =
-  "https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/summary";
+  "http://site.api.espn.com/apis/site/v2/sports/hockey/nhl/summary";
 
 function parseGameId(url: string): string | null {
   try {
