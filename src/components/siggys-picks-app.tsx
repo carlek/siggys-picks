@@ -27,6 +27,17 @@ import { firebaseConfig } from "@/app/firebase";
 import { getAxisMapByAxes } from "recharts/types/chart/generateCategoricalChart"
 import { ThemeToggle } from "@/components/theme-toggle"
 
+const SUMMARY_FAILURE_MESSAGES = [
+  "🐈‍⬛ Siggy swatted that game under the couch. It's gone forever. -Siggy-",
+  "🐈‍⬛ This game got buried in the litter box. Siggy refuses to dig it out right now. -Siggy-",
+  "😾 Siggy's not fetching that one — he's mid-nap and does not care. -Siggy-",
+  "🐈‍⬛ This one slid under the couch with all of Siggy's toys. It's not coming back tonight. -Siggy-",
+  "😹 Siggy hissed at this recap and now refuses to go near it. -Siggy-",
+];
+
+function randomSummaryFailureMessage(): string {
+  return SUMMARY_FAILURE_MESSAGES[Math.floor(Math.random() * SUMMARY_FAILURE_MESSAGES.length)];
+}
 
 function GameCard({ game }: { game: Game }) {
   const { user, loading: authLoading } = useAuth();
@@ -229,7 +240,7 @@ function GameCard({ game }: { game: Game }) {
             if (r.status === 429 && r.statusText === "Too Many Requests") {
               throw new Error("Siggy has run out of catnip and lost access!")
             }
-            throw new Error(`summarize ${r.status}`)
+            throw new Error(randomSummaryFailureMessage())
           }
           const data = await r.json()
           setSummaryText(typeof data?.summary === "string" ? data.summary : null)
