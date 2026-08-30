@@ -61,7 +61,8 @@ export async function parseEspnOdds(json: any):  Promise<GameOdds | null> {
 
 // Single odds
 export async function getOdds(eventId: string | number): Promise<GameOdds | null> {
-  const url = `https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/summary?event=${eventId}`;
+  // http:// (not https://) is required for Cloud Run egress — see text-extract.ts.
+  const url = `http://site.api.espn.com/apis/site/v2/sports/hockey/nhl/summary?event=${eventId}`;
   try {
     const res = await espnFetch(url, { next: { revalidate: 60 } }); // cache for 60s on Next.js
     if (!res.ok) throw new Error(`ESPN odds HTTP ${res.status}`);
